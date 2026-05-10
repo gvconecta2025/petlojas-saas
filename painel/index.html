@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Painel do Lojista - PetLojas V2</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="bg-gray-50 flex flex-col min-h-screen">
+
+    <div id="login-screen" class="flex-grow flex items-center justify-center p-4">
+        <div class="bg-white p-8 rounded-2xl shadow-xl w-full max-w-sm text-center border-t-4 border-teal-600">
+            <h1 class="text-2xl font-black text-gray-800 mb-2">Painel do Lojista</h1>
+            <p class="text-sm text-gray-500 mb-8">Acesse para gerir seu catálogo e marca.</p>
+            <button onclick="window.login()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl shadow flex items-center justify-center gap-3 transition-colors">
+                <i data-lucide="log-in" class="w-5 h-5"></i> Acessar com Google
+            </button>
+        </div>
+    </div>
+
+    <div id="admin-dashboard" class="hidden flex-col h-screen">
+        <header class="bg-teal-800 text-white px-4 py-4 flex justify-between items-center shadow-md">
+            <div class="flex items-center gap-3">
+                <i data-lucide="shield-check" class="w-6 h-6"></i>
+                <h2 class="font-black text-lg">Painel: <span id="store-id-display" class="text-teal-300">...</span></h2>
+            </div>
+            <button onclick="window.logout()" class="text-teal-200 hover:text-white p-2 rounded-lg bg-teal-900/50"><i data-lucide="log-out" class="w-5 h-5"></i></button>
+        </header>
+        
+        <div class="flex-grow p-4 overflow-y-auto max-w-2xl mx-auto w-full space-y-6 mt-4">
+            
+            <div class="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm">
+                <h3 class="font-black text-gray-800 mb-4 flex items-center gap-2 border-b pb-2"><i data-lucide="palette" class="text-teal-600"></i> Marca e Whitelabel</h3>
+                
+                <label class="block text-xs font-black text-gray-500 uppercase tracking-widest mb-1">Nome da Loja</label>
+                <input type="text" id="set-name" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm mb-4">
+                
+                <label class="block text-xs font-black text-gray-500 uppercase tracking-widest mb-1">WhatsApp de Vendas</label>
+                <input type="text" id="set-wa" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm mb-4">
+
+                <div class="grid grid-cols-2 gap-4 mb-6">
+                    <div>
+                        <label class="block text-xs font-black text-gray-500 uppercase tracking-widest mb-1">Cor Primária (Hex)</label>
+                        <div class="flex gap-2">
+                            <input type="color" id="set-color-picker" class="h-10 w-10 rounded cursor-pointer border-0 p-0" onchange="document.getElementById('set-color').value = this.value">
+                            <input type="text" id="set-color" placeholder="#0f766e" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-sm uppercase">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-black text-gray-500 uppercase tracking-widest mb-1">Logo URL</label>
+                        <input type="text" id="set-logo" placeholder="https://..." class="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-sm">
+                    </div>
+                </div>
+                
+                <button onclick="window.saveSettings()" class="w-full bg-teal-800 text-white py-3 rounded-xl font-black text-sm shadow hover:bg-teal-900 transition-colors">Salvar Aparência</button>
+            </div>
+
+            <div class="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm">
+                <h3 class="font-black text-gray-800 mb-4 flex items-center gap-2 border-b pb-2"><i data-lucide="shopping-bag" class="text-teal-600"></i> Catálogo Rápido</h3>
+                
+                <div class="flex gap-2 mb-4">
+                    <input type="text" id="item-title" placeholder="Nome do Produto" class="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm">
+                    <input type="text" id="item-price" placeholder="Preço (10,00)" class="w-28 bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm">
+                    <button onclick="window.saveItem()" class="bg-teal-600 text-white px-4 py-2 rounded-xl font-bold hover:bg-teal-700">+</button>
+                </div>
+
+                <div id="items-list" class="space-y-2"></div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, query, where, getDocs, onSnapshot, doc, setDoc, addDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // AS NOVAS CREDENCIAIS V2
+        const firebaseConfig = {
+            apiKey: "AIzaSyBcrhhlr6sPRy1wfhCBwyAucnTleQDWPUI",
+            authDomain: "petlojas-saas.firebaseapp.com",
+            projectId: "petlojas-saas",
+            storageBucket: "petlojas-saas.firebasestorage.app",
+            messagingSenderId: "699445164987",
+            appId: "1:699445164987:web:908f92216c5fee00aea29e"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        window.myStoreId = null;
+
+        window.login = async () => {
+            try { await signInWithPopup(auth, new GoogleAuthProvider()); } 
+            catch(e) { alert("Erro ao fazer login: " + e.message); }
+        };
+
+        window.logout = async () => {
+            await signOut(auth);
+            window.location.reload();
+        };
+
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                // RBAC: Procura no Firebase qual loja pertence a este e-mail
+                const q = query(collection(db, 'stores'), where('ownerEmail', '==', user.email));
+                const querySnapshot = await getDocs(q);
+                
+                if (querySnapshot.empty) {
+                    alert("Acesso Negado: Nenhuma loja vinculada ao e-mail " + user.email + ".\n\nFale com o Administrador PetLojas.");
+                    await signOut(auth);
+                    return;
+                }
+
+                // Carrega os dados do Lojista Encontrado
+                window.myStoreId = querySnapshot.docs[0].id;
+                document.getElementById('store-id-display').innerText = window.myStoreId.toUpperCase();
+                document.getElementById('login-screen').classList.add('hidden');
+                document.getElementById('admin-dashboard').classList.remove('hidden');
+                document.getElementById('admin-dashboard').classList.add('flex');
+                
+                lucide.createIcons();
+                loadAdminData();
+            } else {
+                document.getElementById('login-screen').classList.remove('hidden');
+                document.getElementById('admin-dashboard').classList.add('hidden');
+                document.getElementById('admin-dashboard').classList.remove('flex');
+            }
+        });
+
+        function loadAdminData() {
+            // Monitora os Settings
+            onSnapshot(doc(db, 'stores', window.myStoreId, 'settings', 'general'), (docSnap) => {
+                if(docSnap.exists()) {
+                    const data = docSnap.data();
+                    document.getElementById('set-name').value = data.storeName || '';
+                    document.getElementById('set-wa').value = data.whatsapp || '';
+                    document.getElementById('set-color').value = data.primaryColor || '#0f766e';
+                    document.getElementById('set-color-picker').value = data.primaryColor || '#0f766e';
+                    document.getElementById('set-logo').value = data.logoUrl || '';
+                }
+            });
+
+            // Monitora os Itens
+            onSnapshot(collection(db, 'stores', window.myStoreId, 'items'), (snapshot) => {
+                const list = document.getElementById('items-list');
+                list.innerHTML = '';
+                snapshot.forEach(d => {
+                    const i = d.data();
+                    list.innerHTML += `
+                        <div class="flex justify-between items-center p-3 bg-gray-50 rounded-xl border border-gray-200">
+                            <div><p class="font-bold text-sm text-gray-800">${i.title}</p><p class="text-teal-600 text-xs font-black">R$ ${i.price}</p></div>
+                            <button onclick="window.delItem('${d.id}')" class="text-red-500 hover:bg-red-100 p-2 rounded-lg"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                        </div>`;
+                });
+                lucide.createIcons();
+            });
+        }
+
+        window.saveSettings = async () => {
+            try {
+                await setDoc(doc(db, 'stores', window.myStoreId, 'settings', 'general'), {
+                    storeName: document.getElementById('set-name').value,
+                    whatsapp: document.getElementById('set-wa').value,
+                    primaryColor: document.getElementById('set-color').value,
+                    logoUrl: document.getElementById('set-logo').value
+                }, { merge: true });
+                alert("Salvo com sucesso! A capa do seu App já foi alterada.");
+            } catch(e) { alert("Erro: " + e.message); }
+        };
+
+        window.saveItem = async () => {
+            const title = document.getElementById('item-title').value;
+            const price = document.getElementById('item-price').value;
+            if(!title || !price) return alert("Preencha título e preço");
+            
+            try {
+                await addDoc(collection(db, 'stores', window.myStoreId, 'items'), { title, price, type: 'product', vitrine: true });
+                document.getElementById('item-title').value = '';
+                document.getElementById('item-price').value = '';
+            } catch(e) { alert("Erro: " + e.message); }
+        };
+
+        window.delItem = async (id) => {
+            if(confirm("Excluir item?")) await deleteDoc(doc(db, 'stores', window.myStoreId, 'items', id));
+        };
+    </script>
+</body>
+</html>

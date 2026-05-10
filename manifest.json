@@ -1,0 +1,21 @@
+{
+  "name": "App da Loja",
+  "short_name": "Loja",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f8fafc",
+  "theme_color": "#0f766e",
+  "icons": [
+    {
+      "src": "https://placehold.co/192x192/0f766e/white?text=Loja",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "https://placehold.co/512x512/0f766e/white?text=Loja",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

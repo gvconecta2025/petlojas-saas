@@ -3,69 +3,174 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Painel do Lojista - PetLojas V2</title>
+    <title>Painel do Lojista - V2</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .modal-overlay { background-color: rgba(0, 0, 0, 0.6); backdrop-filter: blur(4px); }
+    </style>
 </head>
 <body class="bg-gray-50 flex flex-col min-h-screen">
 
     <div id="login-screen" class="flex-grow flex items-center justify-center p-4">
         <div class="bg-white p-8 rounded-2xl shadow-xl w-full max-w-sm text-center border-t-4 border-teal-600">
-            <h1 class="text-2xl font-black text-gray-800 mb-2">Painel do Lojista</h1>
-            <p class="text-sm text-gray-500 mb-8">Acesse para gerir seu catálogo e marca.</p>
-            <button onclick="window.login()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl shadow flex items-center justify-center gap-3 transition-colors">
+            <h1 class="text-2xl font-black text-gray-800 mb-2">Acesso Lojista</h1>
+            <p class="text-sm text-gray-500 mb-8">Gerencie seu catálogo e whitelabel.</p>
+            <button onclick="window.login()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl shadow flex items-center justify-center gap-3">
                 <i data-lucide="log-in" class="w-5 h-5"></i> Acessar com Google
             </button>
         </div>
     </div>
 
-    <div id="admin-dashboard" class="hidden flex-col h-screen">
-        <header class="bg-teal-800 text-white px-4 py-4 flex justify-between items-center shadow-md">
+    <div id="admin-dashboard" class="hidden flex-col h-screen overflow-hidden">
+        <header class="bg-teal-800 text-white px-4 py-4 flex justify-between items-center shadow-md shrink-0">
             <div class="flex items-center gap-3">
-                <i data-lucide="shield-check" class="w-6 h-6"></i>
-                <h2 class="font-black text-lg">Painel: <span id="store-id-display" class="text-teal-300">...</span></h2>
+                <i data-lucide="shield" class="w-6 h-6"></i>
+                <h2 class="font-black text-lg">Painel da Loja</h2>
             </div>
-            <button onclick="window.logout()" class="text-teal-200 hover:text-white p-2 rounded-lg bg-teal-900/50"><i data-lucide="log-out" class="w-5 h-5"></i></button>
+            <button onclick="window.logout()" class="text-teal-200 hover:text-white p-2"><i data-lucide="log-out" class="w-5 h-5"></i></button>
         </header>
-        
-        <div class="flex-grow p-4 overflow-y-auto max-w-2xl mx-auto w-full space-y-6 mt-4">
-            
-            <div class="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm">
-                <h3 class="font-black text-gray-800 mb-4 flex items-center gap-2 border-b pb-2"><i data-lucide="palette" class="text-teal-600"></i> Marca e Whitelabel</h3>
-                
-                <label class="block text-xs font-black text-gray-500 uppercase tracking-widest mb-1">Nome da Loja</label>
-                <input type="text" id="set-name" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm mb-4">
-                
-                <label class="block text-xs font-black text-gray-500 uppercase tracking-widest mb-1">WhatsApp de Vendas</label>
-                <input type="text" id="set-wa" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm mb-4">
 
-                <div class="grid grid-cols-2 gap-4 mb-6">
-                    <div>
-                        <label class="block text-xs font-black text-gray-500 uppercase tracking-widest mb-1">Cor Primária (Hex)</label>
-                        <div class="flex gap-2">
-                            <input type="color" id="set-color-picker" class="h-10 w-10 rounded cursor-pointer border-0 p-0" onchange="document.getElementById('set-color').value = this.value">
-                            <input type="text" id="set-color" placeholder="#0f766e" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-sm uppercase">
+        <div class="bg-white border-b border-gray-200 px-2 flex overflow-x-auto no-scrollbar shadow-sm shrink-0">
+            <button onclick="window.switchTab('items')" id="tab-btn-items" class="px-4 py-3 text-sm font-black text-teal-700 border-b-2 border-teal-700 whitespace-nowrap">Gestão de Itens</button>
+            <button onclick="window.switchTab('groups')" id="tab-btn-groups" class="px-4 py-3 text-sm font-bold text-gray-400 border-b-2 border-transparent whitespace-nowrap">Grupos VIP</button>
+            <button onclick="window.switchTab('settings')" id="tab-btn-settings" class="px-4 py-3 text-sm font-bold text-gray-400 border-b-2 border-transparent whitespace-nowrap">Ajustes da Loja</button>
+        </div>
+
+        <div class="flex-grow overflow-y-auto p-4 pb-20">
+            <div id="tab-items" class="space-y-4">
+                <button onclick="window.openItemEditor()" class="w-full bg-teal-600 text-white py-3 rounded-xl font-black text-sm uppercase tracking-wide shadow-md flex items-center justify-center gap-2">
+                    <i data-lucide="plus" class="w-5 h-5"></i> Adicionar Novo Item
+                </button>
+                <input type="text" id="adminSearchInput" onkeyup="window.renderItems()" placeholder="Buscar itens..." class="w-full bg-white border border-gray-200 rounded-xl px-4 py-2.5 outline-none mb-2">
+                <div id="items-list" class="flex flex-col gap-3"></div>
+            </div>
+
+            <div id="tab-groups" class="hidden space-y-4">
+                <button onclick="window.openGroupEditor()" class="w-full bg-[#25D366] text-white py-3 rounded-xl font-black text-sm uppercase tracking-wide shadow-md flex items-center justify-center gap-2">
+                    <i data-lucide="plus" class="w-5 h-5"></i> Adicionar Grupo
+                </button>
+                <div id="groups-list" class="flex flex-col gap-3"></div>
+            </div>
+
+            <div id="tab-settings" class="hidden space-y-4">
+                <div class="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm">
+                    <label class="block text-xs font-black text-gray-500 uppercase tracking-widest mb-1">Nome da Loja</label>
+                    <input type="text" id="set-name" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2 text-sm mb-4">
+                    
+                    <label class="block text-xs font-black text-gray-500 uppercase tracking-widest mb-1">WhatsApp da Loja (Vendas)</label>
+                    <input type="text" id="set-wa" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2 text-sm mb-4">
+                    
+                    <label class="block text-xs font-black text-gray-500 uppercase tracking-widest mb-1">Link Google Maps</label>
+                    <input type="text" id="set-maps" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2 text-sm mb-4">
+
+                    <label class="block text-xs font-black text-gray-500 uppercase tracking-widest mb-1">Mensagem de Compartilhamento</label>
+                    <textarea id="set-share" rows="2" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2 text-sm mb-4 resize-none"></textarea>
+
+                    <div class="grid grid-cols-2 gap-4 mb-6">
+                        <div>
+                            <label class="block text-xs font-black text-gray-500 uppercase tracking-widest mb-1">Cor da Marca</label>
+                            <div class="flex gap-2">
+                                <input type="color" id="set-color-picker" class="h-10 w-10 rounded cursor-pointer border-0 p-0" onchange="document.getElementById('set-color').value = this.value">
+                                <input type="text" id="set-color" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-sm uppercase">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-black text-gray-500 uppercase tracking-widest mb-1">Logo URL (Drive)</label>
+                            <input type="text" id="set-logo" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-sm">
                         </div>
                     </div>
-                    <div>
-                        <label class="block text-xs font-black text-gray-500 uppercase tracking-widest mb-1">Logo URL</label>
-                        <input type="text" id="set-logo" placeholder="https://..." class="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-sm">
+
+                    <button onclick="window.saveSettings()" class="w-full bg-teal-800 text-white py-3 rounded-xl font-black text-sm shadow">Salvar Ajustes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-item" class="hidden fixed inset-0 z-[60] flex items-center justify-center modal-overlay px-2 py-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col relative">
+            <div class="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50 rounded-t-2xl shrink-0">
+                <h3 id="item-modal-title" class="font-black text-gray-800">Novo Item</h3>
+                <button onclick="window.closeModal('item')" class="text-gray-400 hover:text-gray-600"><i data-lucide="x" class="w-6 h-6"></i></button>
+            </div>
+            <div class="p-5 flex-1 overflow-y-auto space-y-4">
+                <input type="hidden" id="item-id">
+                
+                <select id="item-type" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm font-bold text-teal-800 outline-none">
+                    <option value="product">🛍️ Produto</option>
+                    <option value="service">✂️ Serviço</option>
+                    <option value="offer">⭐ Oferta (Exclusivo)</option>
+                </select>
+
+                <label class="flex items-center gap-2 font-bold text-sm text-teal-800 bg-teal-50 p-3 rounded-xl border border-teal-100">
+                    <input type="checkbox" id="item-vitrine" class="w-4 h-4 text-teal-600"> Destacar na Vitrine Inicial
+                </label>
+
+                <div class="bg-gray-50 border border-gray-200 p-3 rounded-xl">
+                    <label class="block text-xs font-black text-gray-500 uppercase tracking-widest mb-2">Validade</label>
+                    <div class="flex gap-4">
+                        <label class="flex items-center gap-2 text-sm font-bold"><input type="radio" name="item_perm" value="true" onchange="document.getElementById('date-container').classList.add('hidden')" checked> Permanente</label>
+                        <label class="flex items-center gap-2 text-sm font-bold"><input type="radio" name="item_perm" value="false" onchange="document.getElementById('date-container').classList.remove('hidden')"> Temporário</label>
+                    </div>
+                    <div id="date-container" class="hidden mt-3">
+                        <input type="date" id="item-exp" class="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-sm">
                     </div>
                 </div>
-                
-                <button onclick="window.saveSettings()" class="w-full bg-teal-800 text-white py-3 rounded-xl font-black text-sm shadow hover:bg-teal-900 transition-colors">Salvar Aparência</button>
-            </div>
 
-            <div class="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm">
-                <h3 class="font-black text-gray-800 mb-4 flex items-center gap-2 border-b pb-2"><i data-lucide="shopping-bag" class="text-teal-600"></i> Catálogo Rápido</h3>
+                <input type="text" id="item-title" placeholder="Título (ex: Ração 15kg)" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm">
                 
-                <div class="flex gap-2 mb-4">
-                    <input type="text" id="item-title" placeholder="Nome do Produto" class="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm">
-                    <input type="text" id="item-price" placeholder="Preço (10,00)" class="w-28 bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm">
-                    <button onclick="window.saveItem()" class="bg-teal-600 text-white px-4 py-2 rounded-xl font-bold hover:bg-teal-700">+</button>
+                <div class="grid grid-cols-2 gap-3">
+                    <input type="text" id="item-price" placeholder="Preço (R$ 149,90)" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm font-black text-teal-700">
+                    <input type="text" id="item-origPrice" placeholder="De (R$ 180,00) - Opcional" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-500 line-through">
                 </div>
 
-                <div id="items-list" class="space-y-2"></div>
+                <div>
+                    <label class="block text-xs font-black text-gray-500 uppercase tracking-widest mb-1">URLs das Imagens (Até 5)</label>
+                    <div class="space-y-2">
+                        <input type="text" id="item-img-1" placeholder="Foto 1 (Principal)" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-sm">
+                        <input type="text" id="item-img-2" placeholder="Foto 2" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-sm">
+                        <input type="text" id="item-img-3" placeholder="Foto 3" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-sm">
+                    </div>
+                </div>
+
+                <input type="text" id="item-youtube" placeholder="Link Vídeo YouTube (Opcional)" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm">
+                <input type="text" id="item-tags" placeholder="Tags separadas por vírgula (ex: cães, banho)" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm">
+                <textarea id="item-desc" rows="3" placeholder="Descrição completa..." class="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm resize-none"></textarea>
+            </div>
+            
+            <div class="p-4 border-t border-gray-100 flex justify-between bg-white rounded-b-2xl shrink-0">
+                <button id="btn-del-item" onclick="window.delItem()" class="hidden text-red-500 font-bold px-4 py-2 hover:bg-red-50 rounded-lg"><i data-lucide="trash-2" class="w-5 h-5"></i></button>
+                <div class="flex gap-2 ml-auto">
+                    <button onclick="window.closeModal('item')" class="px-5 py-2 text-gray-500 font-bold text-sm">Cancelar</button>
+                    <button onclick="window.saveItem()" class="px-6 py-2 bg-teal-600 text-white rounded-xl font-black text-sm shadow">Salvar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-group" class="hidden fixed inset-0 z-[60] flex items-center justify-center modal-overlay px-4 py-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm flex flex-col">
+            <div class="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50 rounded-t-2xl">
+                <h3 id="group-modal-title" class="font-black text-gray-800">Novo Grupo</h3>
+                <button onclick="window.closeModal('group')" class="text-gray-400 hover:text-gray-600"><i data-lucide="x" class="w-6 h-6"></i></button>
+            </div>
+            <div class="p-5 flex-col gap-4 flex">
+                <input type="hidden" id="group-id">
+                <input type="text" id="group-name" placeholder="Nome (Ex: Ofertas VIP)" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm">
+                <input type="text" id="group-link" placeholder="Link do WhatsApp" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm">
+                <div class="flex flex-col gap-2 bg-gray-50 p-3 rounded-xl border border-gray-200">
+                    <label class="flex items-center gap-2 cursor-pointer text-sm font-bold text-green-600"><input type="radio" name="g_status" value="open" id="g-open" checked> Vagas Abertas</label>
+                    <label class="flex items-center gap-2 cursor-pointer text-sm font-bold text-gray-500"><input type="radio" name="g_status" value="full" id="g-full"> Lotado</label>
+                </div>
+            </div>
+            <div class="p-4 border-t border-gray-100 flex justify-between">
+                <button id="btn-del-group" onclick="window.delGroup()" class="hidden text-red-500 px-4 py-2 font-bold"><i data-lucide="trash-2" class="w-5 h-5"></i></button>
+                <div class="flex gap-2 ml-auto">
+                    <button onclick="window.closeModal('group')" class="px-4 py-2 text-gray-500 font-bold text-sm">Cancelar</button>
+                    <button onclick="window.saveGroup()" class="px-6 py-2 bg-[#25D366] text-white rounded-xl font-black text-sm">Salvar</button>
+                </div>
             </div>
         </div>
     </div>
@@ -73,9 +178,9 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, query, where, getDocs, onSnapshot, doc, setDoc, addDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, collection, query, where, getDocs, onSnapshot, doc, setDoc, addDoc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // AS NOVAS CREDENCIAIS V2
+        // CREDENCIAIS V2
         const firebaseConfig = {
             apiKey: "AIzaSyBcrhhlr6sPRy1wfhCBwyAucnTleQDWPUI",
             authDomain: "petlojas-saas.firebaseapp.com",
@@ -90,101 +195,199 @@
         const db = getFirestore(app);
 
         window.myStoreId = null;
+        window.appItems = [];
+        window.appGroups = [];
 
-        window.login = async () => {
-            try { await signInWithPopup(auth, new GoogleAuthProvider()); } 
-            catch(e) { alert("Erro ao fazer login: " + e.message); }
-        };
-
-        window.logout = async () => {
-            await signOut(auth);
-            window.location.reload();
-        };
+        window.login = async () => { try { await signInWithPopup(auth, new GoogleAuthProvider()); } catch(e) { alert("Erro: " + e.message); } };
+        window.logout = async () => { await signOut(auth); window.location.reload(); };
 
         onAuthStateChanged(auth, async (user) => {
             if (user) {
-                // RBAC: Procura no Firebase qual loja pertence a este e-mail
+                // RBAC
                 const q = query(collection(db, 'stores'), where('ownerEmail', '==', user.email));
-                const querySnapshot = await getDocs(q);
-                
-                if (querySnapshot.empty) {
-                    alert("Acesso Negado: Nenhuma loja vinculada ao e-mail " + user.email + ".\n\nFale com o Administrador PetLojas.");
-                    await signOut(auth);
-                    return;
-                }
+                const snap = await getDocs(q);
+                if (snap.empty) { alert("Acesso Negado: Sem loja vinculada."); await signOut(auth); return; }
 
-                // Carrega os dados do Lojista Encontrado
-                window.myStoreId = querySnapshot.docs[0].id;
-                document.getElementById('store-id-display').innerText = window.myStoreId.toUpperCase();
+                window.myStoreId = snap.docs[0].id;
                 document.getElementById('login-screen').classList.add('hidden');
                 document.getElementById('admin-dashboard').classList.remove('hidden');
                 document.getElementById('admin-dashboard').classList.add('flex');
                 
                 lucide.createIcons();
-                loadAdminData();
+                loadData();
             } else {
                 document.getElementById('login-screen').classList.remove('hidden');
                 document.getElementById('admin-dashboard').classList.add('hidden');
-                document.getElementById('admin-dashboard').classList.remove('flex');
             }
         });
 
-        function loadAdminData() {
-            // Monitora os Settings
+        function loadData() {
             onSnapshot(doc(db, 'stores', window.myStoreId, 'settings', 'general'), (docSnap) => {
                 if(docSnap.exists()) {
-                    const data = docSnap.data();
-                    document.getElementById('set-name').value = data.storeName || '';
-                    document.getElementById('set-wa').value = data.whatsapp || '';
-                    document.getElementById('set-color').value = data.primaryColor || '#0f766e';
-                    document.getElementById('set-color-picker').value = data.primaryColor || '#0f766e';
-                    document.getElementById('set-logo').value = data.logoUrl || '';
+                    const d = docSnap.data();
+                    document.getElementById('set-name').value = d.storeName || '';
+                    document.getElementById('set-wa').value = d.whatsapp || '';
+                    document.getElementById('set-maps').value = d.mapsUrl || '';
+                    document.getElementById('set-share').value = d.shareMessage || '';
+                    document.getElementById('set-color').value = d.primaryColor || '#0f766e';
+                    document.getElementById('set-color-picker').value = d.primaryColor || '#0f766e';
+                    document.getElementById('set-logo').value = d.logoUrl || '';
                 }
             });
 
-            // Monitora os Itens
-            onSnapshot(collection(db, 'stores', window.myStoreId, 'items'), (snapshot) => {
-                const list = document.getElementById('items-list');
-                list.innerHTML = '';
-                snapshot.forEach(d => {
-                    const i = d.data();
-                    list.innerHTML += `
-                        <div class="flex justify-between items-center p-3 bg-gray-50 rounded-xl border border-gray-200">
-                            <div><p class="font-bold text-sm text-gray-800">${i.title}</p><p class="text-teal-600 text-xs font-black">R$ ${i.price}</p></div>
-                            <button onclick="window.delItem('${d.id}')" class="text-red-500 hover:bg-red-100 p-2 rounded-lg"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
-                        </div>`;
-                });
-                lucide.createIcons();
+            onSnapshot(collection(db, 'stores', window.myStoreId, 'items'), (snap) => {
+                window.appItems = []; snap.forEach(d => window.appItems.push({ id: d.id, ...d.data() }));
+                window.appItems.sort((a,b) => b.createdAt - a.createdAt);
+                renderItems();
+            });
+
+            onSnapshot(collection(db, 'stores', window.myStoreId, 'groups'), (snap) => {
+                window.appGroups = []; snap.forEach(d => window.appGroups.push({ id: d.id, ...d.data() }));
+                window.appGroups.sort((a,b) => b.createdAt - a.createdAt);
+                renderGroups();
             });
         }
 
+        window.switchTab = (t) => {
+            ['items', 'groups', 'settings'].forEach(id => {
+                document.getElementById('tab-'+id).classList.add('hidden');
+                document.getElementById('tab-btn-'+id).className = "px-4 py-3 text-sm font-bold text-gray-400 border-b-2 border-transparent whitespace-nowrap";
+            });
+            document.getElementById('tab-'+t).classList.remove('hidden');
+            document.getElementById('tab-btn-'+t).className = "px-4 py-3 text-sm font-black text-teal-700 border-b-2 border-teal-700 whitespace-nowrap";
+        };
+
+        // SETTINGS
         window.saveSettings = async () => {
             try {
                 await setDoc(doc(db, 'stores', window.myStoreId, 'settings', 'general'), {
                     storeName: document.getElementById('set-name').value,
                     whatsapp: document.getElementById('set-wa').value,
+                    mapsUrl: document.getElementById('set-maps').value,
+                    shareMessage: document.getElementById('set-share').value,
                     primaryColor: document.getElementById('set-color').value,
                     logoUrl: document.getElementById('set-logo').value
                 }, { merge: true });
-                alert("Salvo com sucesso! A capa do seu App já foi alterada.");
+                alert("Ajustes salvos com sucesso!");
             } catch(e) { alert("Erro: " + e.message); }
+        };
+
+        window.getDriveImageUrl = (url) => { if(!url) return ""; const m = url.match(/\/d\/([a-zA-Z0-9_-]+)/) || url.match(/id=([a-zA-Z0-9_-]+)/); return m ? `https://lh3.googleusercontent.com/d/$${m[1]}` : url; };
+
+        // ITEMS
+        window.renderItems = () => {
+            const q = document.getElementById('adminSearchInput').value.toLowerCase();
+            const list = document.getElementById('items-list');
+            list.innerHTML = window.appItems.filter(i => (i.title||'').toLowerCase().includes(q)).map(item => {
+                const img = item.images && item.images.length > 0 ? window.getDriveImageUrl(item.images[0]) : window.getDriveImageUrl(item.image);
+                const isExp = !item.permanent && item.expiresAt && item.expiresAt < Date.now();
+                return `
+                <div class="flex items-center gap-3 p-3 bg-white border ${isExp?'border-red-200 bg-red-50/20':'border-gray-200'} rounded-xl shadow-sm cursor-pointer" onclick="window.editItem('${item.id}')">
+                    <img src="${img}" class="w-12 h-12 object-cover rounded-lg shrink-0" onerror="this.src='https://placehold.co/100'">
+                    <div class="flex-1 min-w-0">
+                        <p class="font-bold text-sm text-gray-800 truncate">${item.title}</p>
+                        <p class="text-teal-700 text-xs font-black">${item.price}</p>
+                    </div>
+                </div>`;
+            }).join('') || '<p class="text-gray-400 text-sm text-center">Vazio.</p>';
+        };
+
+        window.openItemEditor = () => {
+            document.getElementById('item-id').value = '';
+            ['title', 'price', 'origPrice', 'youtube', 'tags', 'desc', 'img-1', 'img-2', 'img-3', 'exp'].forEach(f => document.getElementById('item-'+f).value = '');
+            document.getElementById('item-type').value = 'product'; document.getElementById('item-vitrine').checked = false;
+            document.querySelector('input[name="item_perm"][value="true"]').checked = true; document.getElementById('date-container').classList.add('hidden');
+            document.getElementById('item-modal-title').innerText = "Novo Item"; document.getElementById('btn-del-item').classList.add('hidden');
+            document.getElementById('modal-item').classList.remove('hidden');
+        };
+
+        window.editItem = (id) => {
+            const i = window.appItems.find(x => x.id === id); if(!i) return;
+            document.getElementById('item-id').value = i.id;
+            document.getElementById('item-type').value = i.type || 'product'; document.getElementById('item-vitrine').checked = i.vitrine;
+            if(i.permanent !== false) { document.querySelector('input[name="item_perm"][value="true"]').checked = true; document.getElementById('date-container').classList.add('hidden'); }
+            else { document.querySelector('input[name="item_perm"][value="false"]').checked = true; document.getElementById('date-container').classList.remove('hidden'); if(i.expiresAt) document.getElementById('item-exp').value = new Date(i.expiresAt).toISOString().split('T')[0]; }
+            
+            document.getElementById('item-title').value = i.title || ''; document.getElementById('item-price').value = i.price || '';
+            document.getElementById('item-origPrice').value = i.originalPrice || ''; document.getElementById('item-youtube').value = i.youtubeUrl || '';
+            document.getElementById('item-tags').value = (i.tags||[]).join(', '); document.getElementById('item-desc').value = i.description || '';
+            
+            const imgs = i.images || (i.image ? [i.image] : []);
+            [1,2,3].forEach(idx => document.getElementById(`item-img-${idx}`).value = imgs[idx-1] || '');
+
+            document.getElementById('item-modal-title').innerText = "Editar Item"; document.getElementById('btn-del-item').classList.remove('hidden');
+            document.getElementById('modal-item').classList.remove('hidden');
         };
 
         window.saveItem = async () => {
-            const title = document.getElementById('item-title').value;
-            const price = document.getElementById('item-price').value;
-            if(!title || !price) return alert("Preencha título e preço");
-            
             try {
-                await addDoc(collection(db, 'stores', window.myStoreId, 'items'), { title, price, type: 'product', vitrine: true });
-                document.getElementById('item-title').value = '';
-                document.getElementById('item-price').value = '';
+                const id = document.getElementById('item-id').value;
+                const isPerm = document.querySelector('input[name="item_perm"]:checked').value === "true";
+                const expDateStr = document.getElementById('item-exp').value;
+                const expiresAt = (!isPerm && expDateStr) ? new Date(`${expDateStr}T23:59:59`).getTime() : null;
+                const imgs = [1,2,3].map(i => document.getElementById(`item-img-${i}`).value.trim()).filter(Boolean);
+
+                const data = {
+                    type: document.getElementById('item-type').value,
+                    vitrine: document.getElementById('item-vitrine').checked,
+                    permanent: isPerm, expiresAt,
+                    title: document.getElementById('item-title').value,
+                    price: document.getElementById('item-price').value,
+                    originalPrice: document.getElementById('item-origPrice').value,
+                    images: imgs, image: imgs[0] || '',
+                    youtubeUrl: document.getElementById('item-youtube').value,
+                    tags: document.getElementById('item-tags').value.split(',').map(t=>t.trim()).filter(Boolean),
+                    description: document.getElementById('item-desc').value
+                };
+
+                if(id) await updateDoc(doc(db, 'stores', window.myStoreId, 'items', id), data);
+                else await addDoc(collection(db, 'stores', window.myStoreId, 'items'), { ...data, createdAt: Date.now() });
+                
+                window.closeModal('item');
             } catch(e) { alert("Erro: " + e.message); }
         };
 
-        window.delItem = async (id) => {
-            if(confirm("Excluir item?")) await deleteDoc(doc(db, 'stores', window.myStoreId, 'items', id));
+        window.delItem = async () => {
+            if(confirm("Excluir item?")) {
+                await deleteDoc(doc(db, 'stores', window.myStoreId, 'items', document.getElementById('item-id').value));
+                window.closeModal('item');
+            }
         };
+
+        // GROUPS
+        window.renderGroups = () => {
+            document.getElementById('groups-list').innerHTML = window.appGroups.map(g => `
+                <div class="flex items-center gap-3 p-3 bg-white border border-gray-200 rounded-xl shadow-sm cursor-pointer" onclick="window.editGroup('${g.id}')">
+                    <div class="w-10 h-10 rounded-full ${g.status==='open'?'bg-green-100 text-green-600':'bg-gray-100 text-gray-500'} flex items-center justify-center"><i data-lucide="${g.status==='open'?'message-circle':'lock'}" class="w-5 h-5"></i></div>
+                    <div class="flex-1 min-w-0"><p class="font-bold text-sm truncate">${g.name}</p><p class="text-xs text-gray-500 truncate">${g.link}</p></div>
+                </div>`).join('') || '<p class="text-gray-400 text-sm text-center">Nenhum grupo.</p>';
+            lucide.createIcons();
+        };
+
+        window.openGroupEditor = () => {
+            document.getElementById('group-id').value = ''; document.getElementById('group-name').value = ''; document.getElementById('group-link').value = '';
+            document.getElementById('g-open').checked = true; document.getElementById('group-modal-title').innerText = "Novo Grupo";
+            document.getElementById('btn-del-group').classList.add('hidden'); document.getElementById('modal-group').classList.remove('hidden');
+        };
+        window.editGroup = (id) => {
+            const g = window.appGroups.find(x => x.id === id); if(!g) return;
+            document.getElementById('group-id').value = g.id; document.getElementById('group-name').value = g.name || ''; document.getElementById('group-link').value = g.link || '';
+            if(g.status === 'full') document.getElementById('g-full').checked = true; else document.getElementById('g-open').checked = true;
+            document.getElementById('group-modal-title').innerText = "Editar Grupo"; document.getElementById('btn-del-group').classList.remove('hidden');
+            document.getElementById('modal-group').classList.remove('hidden');
+        };
+        window.saveGroup = async () => {
+            try {
+                const id = document.getElementById('group-id').value;
+                const d = { name: document.getElementById('group-name').value, link: document.getElementById('group-link').value, status: document.querySelector('input[name="g_status"]:checked').value };
+                if(id) await updateDoc(doc(db, 'stores', window.myStoreId, 'groups', id), d); else await addDoc(collection(db, 'stores', window.myStoreId, 'groups'), { ...d, createdAt: Date.now() });
+                window.closeModal('group');
+            } catch(e) { alert("Erro: "+e.message); }
+        };
+        window.delGroup = async () => { if(confirm("Excluir?")) { await deleteDoc(doc(db, 'stores', window.myStoreId, 'groups', document.getElementById('group-id').value)); window.closeModal('group'); } };
+
+        window.closeModal = (id) => document.getElementById('modal-'+id).classList.add('hidden');
+
     </script>
 </body>
 </html>

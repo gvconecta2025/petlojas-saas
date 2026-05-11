@@ -5,10 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title id="page-title">PetLojas - Carregando...</title>
     
-    <link rel="icon" type="image/png" href="/icon.png">
-    <link rel="apple-touch-icon" href="/icon.png">
-    <link rel="manifest" href="/manifest.json" crossorigin="use-credentials">
-    <meta name="theme-color" content="#0f766e">
+    <link id="dynamic-favicon" rel="icon" type="image/png" href="/icon.png">
+    <link id="dynamic-apple-icon" rel="apple-touch-icon" href="/icon.png">
+    <link id="dynamic-manifest" rel="manifest" href="/manifest.json" crossorigin="use-credentials">
+    <meta id="dynamic-theme-color" name="theme-color" content="#0f766e">
 
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -51,26 +51,20 @@
     </style>
 
     <script>
-        // 1. Regista o Service Worker para habilitar o App Offline
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/sw.js').catch(err => {
-                    console.warn('Falha no Service Worker. Verifique se o sw.js está na raiz.', err);
-                });
+                navigator.serviceWorker.register('/sw.js').catch(err => console.warn('SW falhou.', err));
             });
         }
 
-        // 2. Captura o Evento Nativo de Instalação (Android / Chrome)
         let deferredPrompt;
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             deferredPrompt = e;
-            // Mostra o botão de instalar no cabeçalho se o app não estiver instalado
             const btn = document.getElementById('install-btn');
             if (btn) btn.classList.remove('hidden');
         });
 
-        // 3. Executa a Instalação
         window.installApp = async () => {
             if (deferredPrompt) {
                 deferredPrompt.prompt();
@@ -80,7 +74,6 @@
                 }
                 deferredPrompt = null;
             } else {
-                // Fallback inteligente para iPhone (iOS) que não suporta o botão nativo
                 if (window.showSystemMessage) {
                     window.showSystemMessage(
                         "Instalar o Aplicativo", 
@@ -97,10 +90,10 @@
 <body class="min-h-screen flex flex-col">
 
     <div id="loader" class="fixed inset-0 z-50 bg-white flex flex-col items-center justify-center transition-opacity duration-500">
-        <img src="/icon.png" alt="Carregando Loja" class="w-40 h-40 sm:w-48 sm:h-48 object-contain mb-10 animate-pulse drop-shadow-2xl rounded-3xl" onerror="this.style.display='none'">
+        <img id="splash-logo" src="" alt="Carregando Loja..." class="hidden w-40 h-40 sm:w-48 sm:h-48 object-contain mb-10 animate-pulse drop-shadow-2xl rounded-3xl" onerror="this.style.display='none'">
         
         <div class="animate-spin rounded-full h-12 w-12 border-4 border-gray-100 mb-6" style="border-bottom-color: var(--cor-primaria);"></div>
-        <p class="text-gray-400 font-black tracking-widest text-xs animate-pulse uppercase">A INICIAR LOJA...</p>
+        <p class="text-gray-400 font-black tracking-widest text-xs animate-pulse uppercase">A CONECTAR À LOJA...</p>
     </div>
 
     <header class="bg-white shadow-sm sticky top-0 z-40 border-b border-gray-100">
@@ -109,7 +102,7 @@
                 <img id="header-logo" src="https://placehold.co/100x100?text=Logo" alt="Logótipo" class="w-14 h-14 object-contain transition-transform active:scale-95 shrink-0 drop-shadow-sm rounded-xl">
                 <div class="text-left pointer-events-none">
                     <h1 id="header-store-name" class="text-xl font-black text-primaria leading-none truncate max-w-[150px] sm:max-w-[250px]">PetLojas</h1>
-                    <p class="text-[9px] text-gray-500 font-medium leading-tight mt-0.5"><i data-lucide="map-pin" class="w-3 h-3 inline"></i> Atendimento Rápido</p>
+                    <p class="text-[9px] text-gray-500 font-medium leading-tight mt-0.5"><i data-lucide="map-pin" class="w-3 h-3 inline"></i> Atendemos toda a cidade.</p>
                 </div>
             </button>
             
@@ -286,17 +279,52 @@
                 if(docSnap.exists()) {
                     const data = docSnap.data();
                     window.appSettings = { ...window.appSettings, ...data };
+                    
                     document.getElementById('header-store-name').innerText = data.storeName || "PetLojas";
                     document.getElementById('page-title').innerText = data.storeName || "Loja";
-                    if(data.logoUrl) document.getElementById('header-logo').src = data.logoUrl;
+                    
                     if(data.primaryColor) {
                         document.documentElement.style.setProperty('--cor-primaria', data.primaryColor);
-                        document.querySelector('meta[name="theme-color"]')?.setAttribute("content", data.primaryColor);
+                        document.getElementById('dynamic-theme-color').setAttribute("content", data.primaryColor);
+                    }
+
+                    // --- MÁGICA DO MANIFEST DINÂMICO PARA INSTALAÇÃO PWA ---
+                    if(data.logoUrl) {
+                        document.getElementById('header-logo').src = data.logoUrl;
+                        
+                        // Atualiza o logo gigante da splash screen e revela
+                        const splash = document.getElementById('splash-logo');
+                        splash.src = data.logoUrl;
+                        splash.classList.remove('hidden');
+
+                        // Atualiza favicons no navegador
+                        document.getElementById('dynamic-favicon').href = data.logoUrl;
+                        document.getElementById('dynamic-apple-icon').href = data.logoUrl;
+
+                        // Recria o PWA App manifest no exato momento para o telemóvel assumir os dados deste cliente
+                        const startUrl = window.location.search ? "/" + window.location.search : "/";
+                        const dynamicManifest = {
+                            name: data.storeName || "Loja",
+                            short_name: data.storeName || "Loja",
+                            start_url: startUrl,
+                            display: "standalone",
+                            background_color: "#f8fafc",
+                            theme_color: data.primaryColor || "#0f766e",
+                            icons: [
+                                { src: data.logoUrl, sizes: "192x192", type: "image/png", purpose: "any maskable" },
+                                { src: data.logoUrl, sizes: "512x512", type: "image/png", purpose: "any maskable" }
+                            ]
+                        };
+                        const blob = new Blob([JSON.stringify(dynamicManifest)], { type: 'application/json' });
+                        document.getElementById('dynamic-manifest').href = URL.createObjectURL(blob);
                     }
                 }
+                
                 // Remover Splash Screen elegantemente
-                document.getElementById('loader').classList.add('opacity-0');
-                setTimeout(() => document.getElementById('loader').classList.add('hidden'), 500);
+                setTimeout(() => {
+                    document.getElementById('loader').classList.add('opacity-0');
+                    setTimeout(() => document.getElementById('loader').classList.add('hidden'), 500);
+                }, 800); // Aguarda um momento extra para a logomarca ser admirada
             });
 
             // CARREGAR ITEMS (Com Sanitização)
@@ -616,16 +644,12 @@
         };
 
         window.closeSystemMessage = () => { document.getElementById('msg-modal').classList.add('opacity-0'); setTimeout(() => document.getElementById('msg-modal').classList.add('hidden'), 300); };
-        window.scrollCarousel = (id, dir) => { const c = document.getElementById(id); if (c) c.scrollBy({ left: dir * c.clientWidth, behavior: 'smooth' }); };
-        window.updateCarouselDots = (id) => {
-            const c = document.getElementById(id); const dots = document.getElementById(`dots-${id}`); if (!c || !dots) return;
-            const idx = Math.round(c.scrollLeft / c.clientWidth);
-            Array.from(dots.children).forEach((dot, i) => dot.className = i === idx ? 'w-2 h-2 rounded-full shadow-md bg-white' : 'w-2 h-2 rounded-full shadow-md bg-white/50');
-        };
+        
         window.shareApp = () => {
-            const text = `🐾 *${window.appSettings.storeName || 'Loja'}*\n\n${window.appSettings.shareMessage || ''}\n\n📲 Acesse:\n👉 ${window.location.href}`;
+            const text = `🐾 *${window.appSettings.storeName || 'Loja'}*\n\n${window.appSettings.shareMessage || ''}\n\n📲 Acesse e instale o nosso App:\n👉 ${window.location.href}`;
             window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
         };
+        
         window.openLocation = () => { if(window.appSettings.mapsUrl) window.open(window.appSettings.mapsUrl, '_blank'); };
 
     </script>

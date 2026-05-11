@@ -103,8 +103,7 @@
                 <p id="catalog-subtitle" class="text-sm text-gray-500 font-medium">Encontre o que precisa.</p>
             </div>
 
-            <div id="quick-tags" class="flex gap-2 overflow-x-auto no-scrollbar mb-6 pb-2">
-                </div>
+            <div id="quick-tags" class="flex gap-2 overflow-x-auto no-scrollbar mb-6 pb-2"></div>
             
             <div id="catalog-container" class="grid grid-cols-2 md:grid-cols-3 gap-4"></div>
         </div>
@@ -232,7 +231,7 @@
                     if (domainDoc.exists()) return domainDoc.data().storeId;
                 } catch(e) {}
             }
-            return 'demo_store'; // Fallback
+            return 'demo_store';
         }
 
         window.onload = async () => {
@@ -252,18 +251,26 @@
                     if(data.logoUrl) document.getElementById('header-logo').src = data.logoUrl;
                     if(data.primaryColor) {
                         document.documentElement.style.setProperty('--cor-primaria', data.primaryColor);
-                        document.querySelector('meta[name="theme-color"]').setAttribute("content", data.primaryColor);
+                        document.querySelector('meta[name="theme-color"]')?.setAttribute("content", data.primaryColor);
                     }
                 }
-                // Remover loader
                 document.getElementById('loader').classList.add('opacity-0');
                 setTimeout(() => document.getElementById('loader').classList.add('hidden'), 500);
             });
 
-            // CARREGAR ITEMS V2
+            // CARREGAR ITEMS V2 (Com Sanitização Automática)
             onSnapshot(collection(db, 'stores', window.currentStoreId, 'items'), (snapshot) => {
-                window.appItems = []; snapshot.forEach(doc => window.appItems.push({ id: doc.id, ...doc.data() }));
+                window.appItems = []; 
+                snapshot.forEach(doc => {
+                    let data = doc.data();
+                    // Limpeza de erros do banco caso hajam registros antigos "undefined"
+                    if(data.description === 'undefined') data.description = '';
+                    if(Array.isArray(data.tags)) data.tags = data.tags.filter(t => t && t !== 'undefined');
+                    else data.tags = [];
+                    window.appItems.push({ id: doc.id, ...data });
+                });
                 window.appItems.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+                
                 if(currentView === 'home') renderFeed();
                 if(currentView === 'catalog') renderCatalog();
                 if(currentView === 'detail' && window.currentDetailId) openDetail(window.currentDetailId);
@@ -277,11 +284,12 @@
             });
         };
 
-        // FUNÇÕES AUXILIARES DE MÍDIA (Idênticas à V1)
+        // FUNÇÕES AUXILIARES DE MÍDIA (CORRIGIDAS)
         window.getDriveImageUrl = (url) => { 
             if (!url) return ""; 
             const match = url.match(/\/d\/([a-zA-Z0-9_-]+)/) || url.match(/id=([a-zA-Z0-9_-]+)/); 
-            return match ? `https://lh3.googleusercontent.com/d/$${match[1]}` : url; 
+            // Fórmula do Drive 100% corrigida abaixo:
+            return match ? `https://drive.google.com/uc?export=view&id=${match[1]}` : url; 
         };
         window.getYoutubeId = (url) => { 
             if (!url) return null;
@@ -352,7 +360,7 @@
         const filterItems = (items) => {
             let filtered = items;
             if(currentSearchQuery) {
-                filtered = items.filter(item => item.title.toLowerCase().includes(currentSearchQuery) || (item.tags && item.tags.some(t => t.toLowerCase().includes(currentSearchQuery))));
+                filtered = items.filter(item => (item.title && item.title.toLowerCase().includes(currentSearchQuery)) || (item.tags && item.tags.some(t => t.toLowerCase().includes(currentSearchQuery))));
             }
             const now = Date.now();
             filtered = filtered.filter(item => {
@@ -388,18 +396,21 @@
                         </div>
                     </div>`;
                 } else {
-                    const imgUrl = images.length === 1 ? window.getDriveImageUrl(images[0]) : 'https://placehold.co/600x600?text=Imagem';
-                    mediaHtml = `<div class="aspect-square bg-gray-100 relative overflow-hidden"><img src="${imgUrl}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" onerror="this.onerror=null;this.src='https://placehold.co/600x600?text=Imagem'"></div>`;
+                    const imgUrl = images.length === 1 ? window.getDriveImageUrl(images[0]) : 'https://placehold.co/600x600?text=Sem+Imagem';
+                    mediaHtml = `<div class="aspect-square bg-gray-100 relative overflow-hidden"><img src="${imgUrl}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" onerror="this.onerror=null;this.src='https://placehold.co/600x600?text=Sem+Imagem'"></div>`;
                 }
+                
+                // Fallback de segurança para as Tags
+                const tagsHtml = item.tags && item.tags.length > 0 ? `<div class="flex gap-2 mb-3 flex-wrap">${item.tags.map(tag => `<button onclick="event.stopPropagation(); window.filterByTag('${tag}'); window.showView('catalog', 'product')" class="text-[11px] bg-gray-100 border border-gray-200 text-gray-600 px-3 py-1 rounded-lg uppercase font-black tracking-wider shadow-sm cursor-pointer hover:bg-gray-200 transition-colors">${tag}</button>`).join('')}</div>` : '';
 
                 return `
                 <div onclick="window.openDetail('${item.id}')" class="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden cursor-pointer relative group">
                     ${item.type === 'offer' ? `<div class="absolute top-4 right-4 bg-orange-500 text-white text-xs font-black px-4 py-1.5 rounded-full shadow-lg uppercase tracking-wider z-20">Oferta</div>` : ''}
                     ${mediaHtml}
                     <div class="p-5">
-                        <div class="flex gap-2 mb-3 flex-wrap">${(item.tags||[]).map(tag => `<button onclick="event.stopPropagation(); window.filterByTag('${tag}'); window.showView('catalog', 'product')" class="text-[11px] bg-gray-100 border border-gray-200 text-gray-600 px-3 py-1 rounded-lg uppercase font-black tracking-wider shadow-sm cursor-pointer hover:bg-gray-200 transition-colors">${tag}</button>`).join('')}</div>
-                        <h3 class="text-xl font-black text-gray-800 mb-1 leading-tight">${item.title}</h3>
-                        <div class="flex items-end gap-2 mt-4"><span class="text-2xl font-black text-primaria">${item.price}</span>${item.originalPrice ? `<span class="text-sm text-gray-400 line-through mb-1">${item.originalPrice}</span>` : ''}</div>
+                        ${tagsHtml}
+                        <h3 class="text-xl font-black text-gray-800 mb-1 leading-tight">${item.title || 'Sem título'}</h3>
+                        <div class="flex items-end gap-2 mt-4"><span class="text-2xl font-black text-primaria">${item.price || 'R$ 0,00'}</span>${item.originalPrice ? `<span class="text-sm text-gray-400 line-through mb-1">${item.originalPrice}</span>` : ''}</div>
                         <div class="mt-4 pt-4 border-t border-gray-100"><button onclick="event.stopPropagation(); window.openDetail('${item.id}')" class="w-full bg-gray-50 text-primaria font-bold py-3 rounded-xl flex items-center justify-center gap-2 hover:bg-gray-100 transition-colors">Ver Detalhes <i data-lucide="arrow-right" class="w-4 h-4"></i></button></div>
                     </div>
                 </div>`;
@@ -411,7 +422,6 @@
             const container = document.getElementById('catalog-container');
             let items = filterItems(window.appItems.filter(item => currentSearchQuery ? (item.type === 'product' || item.type === 'service') : item.type === currentCatalogType));
             
-            // Popula as tags
             const tagsContainer = document.getElementById('quick-tags');
             let allTags = new Set();
             items.forEach(i => (i.tags||[]).forEach(t => allTags.add(t)));
@@ -431,8 +441,8 @@
                 <div onclick="window.openDetail('${item.id}')" class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden cursor-pointer group flex flex-col h-full relative">
                     ${item.type === 'offer' ? `<div class="absolute top-2 right-2 bg-orange-500 text-white text-[9px] font-black px-2 py-0.5 rounded-md shadow uppercase tracking-wider z-10">Oferta</div>` : ''}
                     ${isCarousel ? `<div class="absolute top-2 left-2 bg-black/50 text-white text-[9px] font-bold px-1.5 py-0.5 rounded z-10 pointer-events-none flex items-center gap-1"><i data-lucide="images" class="w-3 h-3"></i></div>` : ''}
-                    <div class="aspect-square bg-gray-100 relative overflow-hidden"><img src="${imgUrl}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" onerror="this.onerror=null;this.src='https://placehold.co/300x300?text=Imagem'"></div>
-                    <div class="p-3 flex flex-col flex-grow"><h3 class="text-sm font-bold text-gray-800 leading-tight mb-2 line-clamp-2">${item.title}</h3><div class="mt-auto"><p class="text-lg font-black text-primaria">${item.price}</p></div></div>
+                    <div class="aspect-square bg-gray-100 relative overflow-hidden"><img src="${imgUrl || 'https://placehold.co/300x300?text=Sem+Foto'}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" onerror="this.onerror=null;this.src='https://placehold.co/300x300?text=Sem+Foto'"></div>
+                    <div class="p-3 flex flex-col flex-grow"><h3 class="text-sm font-bold text-gray-800 leading-tight mb-2 line-clamp-2">${item.title || 'Sem título'}</h3><div class="mt-auto"><p class="text-lg font-black text-primaria">${item.price || 'R$ 0,00'}</p></div></div>
                 </div>`;
             }).join('');
             lucide.createIcons();
@@ -464,16 +474,21 @@
                     </div>
                 </div>`;
             } else {
-                const imgUrl = images.length === 1 ? window.getDriveImageUrl(images[0]) : 'https://placehold.co/600x600?text=Imagem';
-                mediaHtml = `<div class="aspect-square w-full relative bg-gray-100"><img src="${imgUrl}" class="w-full h-full object-cover" onerror="this.onerror=null;this.src='https://placehold.co/600x600?text=Imagem'"></div>`;
+                const imgUrl = images.length === 1 ? window.getDriveImageUrl(images[0]) : 'https://placehold.co/600x600?text=Sem+Imagem';
+                mediaHtml = `<div class="aspect-square w-full relative bg-gray-100"><img src="${imgUrl}" class="w-full h-full object-cover" onerror="this.onerror=null;this.src='https://placehold.co/600x600?text=Sem+Imagem'"></div>`;
             }
+
+            // Fallbacks de segurança p/ Tags e Descrição
+            const tagsHtml = item.tags && item.tags.length > 0 ? `<div class="flex gap-2 mb-4 flex-wrap">${item.tags.map(tag => `<button onclick="window.filterByTag('${tag}'); window.showView('catalog', 'product')" class="text-xs bg-gray-100 border border-gray-200 text-gray-600 px-4 py-1.5 rounded-xl uppercase font-black tracking-widest shadow-sm cursor-pointer hover:bg-gray-200 transition-colors">${tag}</button>`).join('')}</div>` : '';
+            const descHtml = item.description ? `<p class="text-gray-600 leading-relaxed mb-8 whitespace-pre-wrap">${item.description}</p>` : '';
 
             container.innerHTML = `
                 <div class="relative">${mediaHtml}${item.type === 'offer' ? `<div class="absolute top-4 left-4 bg-orange-500 text-white text-xs font-black px-4 py-1.5 rounded-full shadow-lg uppercase tracking-wider z-10">Oferta</div>` : ''}</div>
                 <div class="p-6">
-                    <h1 class="text-2xl sm:text-3xl font-black text-gray-800 leading-tight mb-2">${item.title}</h1>
-                    <div class="flex items-end gap-3 mb-6"><span class="text-3xl font-black text-primaria">${item.price}</span>${item.originalPrice ? `<span class="text-lg text-gray-400 line-through mb-1">${item.originalPrice}</span>` : ''}</div>
-                    <p class="text-gray-600 leading-relaxed mb-8 whitespace-pre-wrap">${item.description || ''}</p>
+                    ${tagsHtml}
+                    <h1 class="text-2xl sm:text-3xl font-black text-gray-800 leading-tight mb-2">${item.title || 'Sem título'}</h1>
+                    <div class="flex items-end gap-3 mb-6"><span class="text-3xl font-black text-primaria">${item.price || 'R$ 0,00'}</span>${item.originalPrice ? `<span class="text-lg text-gray-400 line-through mb-1">${item.originalPrice}</span>` : ''}</div>
+                    ${descHtml}
                     <button onclick="window.addToCart('${item.id}')" class="w-full flex justify-center items-center gap-2 bg-primaria text-white py-4 px-6 rounded-2xl font-black text-base sm:text-lg uppercase tracking-wide shadow-md transition-all active:scale-95 mb-4"><i data-lucide="shopping-cart" class="w-6 h-6"></i> Adicionar ao Carrinho</button>
                 </div>`;
             lucide.createIcons();
@@ -529,7 +544,7 @@
                 const imgUrl = item.images && item.images.length > 0 ? window.getDriveImageUrl(item.images[0]) : window.getDriveImageUrl(item.image);
                 return `
                 <div class="flex items-center gap-3 bg-white p-3 rounded-2xl border border-gray-100 shadow-sm">
-                    <img src="${imgUrl}" class="w-20 h-20 object-cover rounded-xl shrink-0" onerror="this.src='https://placehold.co/100?text=Foto'">
+                    <img src="${imgUrl || 'https://placehold.co/100?text=Foto'}" class="w-20 h-20 object-cover rounded-xl shrink-0" onerror="this.src='https://placehold.co/100?text=Foto'">
                     <div class="flex-1 min-w-0">
                         <p class="text-sm font-bold text-gray-800 line-clamp-2">${item.title}</p>
                         <p class="text-primaria font-black text-sm">${item.price}</p>

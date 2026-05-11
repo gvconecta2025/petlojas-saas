@@ -108,7 +108,8 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        // INCLUSÃO DO SETPERSISTENCE PARA MANTER LOGADO ETERNAMENTE
+        import { getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, onSnapshot, doc, setDoc, deleteDoc, getCountFromServer, query, collectionGroup } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         const firebaseConfig = {
@@ -122,6 +123,10 @@
 
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
+        
+        // A SUPER COLA: Obriga o navegador a gravar o login no disco
+        setPersistence(auth, browserLocalPersistence).catch(console.error);
+
         const db = getFirestore(app);
         const MASTER_EMAIL = "professoragiselle.edu2@gmail.com";
 
@@ -146,15 +151,12 @@
         });
 
         async function loadGlobalStats() {
-            // Contagem de Lojas
             const storesSnap = await getCountFromServer(collection(db, 'stores'));
             document.getElementById('stat-stores').innerText = storesSnap.data().count;
 
-            // Contagem de Domínios
             const domainsSnap = await getCountFromServer(collection(db, 'domain_mapping'));
             document.getElementById('stat-domains').innerText = domainsSnap.data().count;
 
-            // Contagem Global de Itens (Usando collectionGroup para ler 'items' de todas as lojas)
             const itemsSnap = await getCountFromServer(query(collectionGroup(db, 'items')));
             document.getElementById('stat-items').innerText = itemsSnap.data().count;
         }
@@ -190,7 +192,6 @@
 
         function loadDomains() {
             onSnapshot(collection(db, 'domain_mapping'), (snap) => {
-                const list = document.createElement('div'); // Apenas para atualizar stats
                 loadGlobalStats();
             });
         }

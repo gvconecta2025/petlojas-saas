@@ -7,7 +7,7 @@
     
     <link rel="icon" type="image/png" href="/icon.png">
     <link rel="apple-touch-icon" href="/icon.png">
-    <link rel="manifest" href="/manifest.json">
+    <link rel="manifest" href="/manifest.json" crossorigin="use-credentials">
     <meta name="theme-color" content="#0f766e">
 
     <script src="https://cdn.tailwindcss.com"></script>
@@ -49,13 +49,58 @@
         .bg-primaria { background-color: var(--cor-primaria) !important; }
         .border-primaria { border-color: var(--cor-primaria) !important; }
     </style>
+
+    <script>
+        // 1. Regista o Service Worker para habilitar o App Offline
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js').catch(err => {
+                    console.warn('Falha no Service Worker. Verifique se o sw.js está na raiz.', err);
+                });
+            });
+        }
+
+        // 2. Captura o Evento Nativo de Instalação (Android / Chrome)
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            // Mostra o botão de instalar no cabeçalho se o app não estiver instalado
+            const btn = document.getElementById('install-btn');
+            if (btn) btn.classList.remove('hidden');
+        });
+
+        // 3. Executa a Instalação
+        window.installApp = async () => {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                if (outcome === 'accepted') {
+                    document.getElementById('install-btn').classList.add('hidden');
+                }
+                deferredPrompt = null;
+            } else {
+                // Fallback inteligente para iPhone (iOS) que não suporta o botão nativo
+                if (window.showSystemMessage) {
+                    window.showSystemMessage(
+                        "Instalar o Aplicativo", 
+                        "No iPhone (iOS): Toque no botão 'Partilhar' (quadrado com seta para cima) na barra do navegador e escolha 'Adicionar à Tela de Início'.\n\nNo Android: Procure por 'Instalar Aplicativo' no menu do navegador (3 pontinhos).", 
+                        "info"
+                    );
+                } else {
+                    alert("Para instalar: Use a opção 'Adicionar à Tela de Início' no menu do seu navegador.");
+                }
+            }
+        };
+    </script>
 </head>
 <body class="min-h-screen flex flex-col">
 
     <div id="loader" class="fixed inset-0 z-50 bg-white flex flex-col items-center justify-center transition-opacity duration-500">
-        <img src="/icon.png" alt="PetLojas" class="w-24 h-24 object-contain mb-8 animate-pulse drop-shadow-md rounded-2xl" onerror="this.style.display='none'">
-        <div class="animate-spin rounded-full h-10 w-10 border-4 border-gray-100 mb-4" style="border-bottom-color: var(--cor-primaria);"></div>
-        <p class="text-gray-400 font-black tracking-widest text-xs animate-pulse uppercase">A iniciar loja...</p>
+        <img src="/icon.png" alt="Carregando Loja" class="w-40 h-40 sm:w-48 sm:h-48 object-contain mb-10 animate-pulse drop-shadow-2xl rounded-3xl" onerror="this.style.display='none'">
+        
+        <div class="animate-spin rounded-full h-12 w-12 border-4 border-gray-100 mb-6" style="border-bottom-color: var(--cor-primaria);"></div>
+        <p class="text-gray-400 font-black tracking-widest text-xs animate-pulse uppercase">A INICIAR LOJA...</p>
     </div>
 
     <header class="bg-white shadow-sm sticky top-0 z-40 border-b border-gray-100">
@@ -63,19 +108,20 @@
             <button onclick="window.showView('home')" class="flex items-center gap-3 focus:outline-none select-none">
                 <img id="header-logo" src="https://placehold.co/100x100?text=Logo" alt="Logótipo" class="w-14 h-14 object-contain transition-transform active:scale-95 shrink-0 drop-shadow-sm rounded-xl">
                 <div class="text-left pointer-events-none">
-                    <h1 id="header-store-name" class="text-xl font-black text-primaria leading-none">PetLojas</h1>
+                    <h1 id="header-store-name" class="text-xl font-black text-primaria leading-none truncate max-w-[150px] sm:max-w-[250px]">PetLojas</h1>
                     <p class="text-[9px] text-gray-500 font-medium leading-tight mt-0.5"><i data-lucide="map-pin" class="w-3 h-3 inline"></i> Atendimento Rápido</p>
                 </div>
             </button>
             
             <div class="flex items-center gap-2">
-                <button onclick="window.shareApp()" class="p-2 text-gray-500 hover:text-primaria bg-gray-50 rounded-full border border-gray-100 shadow-sm">
+                <button id="install-btn" onclick="window.installApp()" class="hidden px-3 py-1.5 bg-primaria text-white text-[10px] sm:text-xs font-bold rounded-lg shadow-md active:scale-95 transition-all flex items-center gap-1 uppercase tracking-wider">
+                    <i data-lucide="download" class="w-3 h-3 sm:w-4 sm:h-4"></i> Instalar
+                </button>
+
+                <button onclick="window.shareApp()" class="p-2 text-gray-500 hover:text-primaria bg-gray-50 rounded-full border border-gray-100 shadow-sm" title="Compartilhar">
                     <i data-lucide="share-2" class="w-5 h-5"></i>
                 </button>
-                <button onclick="window.openLocation()" class="p-2 text-gray-500 hover:text-primaria bg-gray-50 rounded-full border border-gray-100 shadow-sm">
-                    <i data-lucide="map-pin" class="w-5 h-5"></i>
-                </button>
-                <button onclick="window.showView('cart')" class="relative p-2 text-gray-500 hover:text-primaria bg-gray-50 rounded-full border border-gray-100 shadow-sm">
+                <button onclick="window.showView('cart')" class="relative p-2 text-gray-500 hover:text-primaria bg-gray-50 rounded-full border border-gray-100 shadow-sm" title="Carrinho">
                     <i data-lucide="shopping-cart" class="w-5 h-5"></i>
                     <span id="cart-badge" class="hidden absolute -top-1 -right-1 bg-red-500 text-white text-[9px] font-black w-4 h-4 flex items-center justify-center rounded-full shadow-sm">0</span>
                 </button>
@@ -85,7 +131,7 @@
         <div class="max-w-3xl mx-auto px-4 pb-3 mt-1">
             <div class="relative">
                 <i data-lucide="search" class="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400"></i>
-                <input type="text" id="searchInput" onkeyup="window.handleSearch(event)" placeholder="Buscar na loja..." class="w-full bg-gray-100 border-none text-gray-700 text-sm rounded-2xl pl-10 pr-4 py-2.5 focus:ring-2 focus:ring-primaria outline-none transition-all">
+                <input type="text" id="searchInput" onkeyup="window.handleSearch(event)" placeholder="Buscar por ração, banho, acessórios..." class="w-full bg-gray-100 border-none text-gray-700 text-sm rounded-2xl pl-10 pr-4 py-2.5 focus:ring-2 focus:ring-primaria outline-none transition-all">
             </div>
         </div>
     </header>
@@ -110,7 +156,7 @@
         </div>
 
         <div id="detail-view" class="px-4 py-6 fade-enter hidden">
-            <button onclick="window.goBack()" class="flex items-center gap-2 text-primaria font-bold mb-4">
+            <button onclick="window.goBack()" class="flex items-center gap-2 text-primaria font-bold mb-4 hover:opacity-80 transition-opacity">
                 <i data-lucide="arrow-left" class="w-5 h-5"></i> Voltar
             </button>
             <div id="detail-container" class="bg-white rounded-3xl shadow-lg border border-gray-100 overflow-hidden"></div>
@@ -121,21 +167,32 @@
             <div id="cart-items-container" class="flex flex-col gap-4 mb-6"></div>
             <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 hidden" id="cart-summary">
                 <div class="flex justify-between items-center mb-6">
-                    <span class="text-gray-500 font-bold">Total:</span>
+                    <span class="text-gray-500 font-bold">Total do Pedido:</span>
                     <span id="cart-total" class="text-2xl font-black text-primaria">R$ 0,00</span>
                 </div>
-                <button onclick="window.checkoutWhatsApp()" class="w-full bg-[#25D366] text-white py-4 rounded-xl font-black text-lg uppercase shadow-md flex items-center justify-center gap-2">
-                    <i data-lucide="send" class="w-5 h-5"></i> Finalizar Pedido
-                </button>
+                <div class="flex flex-col gap-3">
+                    <button onclick="window.checkoutWhatsApp()" class="w-full bg-[#25D366] hover:bg-[#1ebd5a] text-white py-4 rounded-xl font-black text-lg uppercase tracking-wide shadow-[0_5px_15px_rgba(37,211,102,0.3)] transition-all flex items-center justify-center gap-2">
+                        <i data-lucide="send" class="w-5 h-5"></i> Fechar Pedido
+                    </button>
+                </div>
             </div>
             <div id="cart-empty" class="text-center py-12">
+                <div class="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4 text-gray-300">
+                    <i data-lucide="shopping-cart" class="w-10 h-10"></i>
+                </div>
                 <p class="text-gray-500 font-medium">O carrinho está vazio.</p>
-                <button onclick="window.showView('home')" class="mt-4 text-primaria font-bold">Ver Vitrine</button>
+                <button onclick="window.showView('home')" class="mt-6 text-primaria font-bold bg-gray-100 px-6 py-2 rounded-xl">Voltar para a Vitrine</button>
             </div>
         </div>
 
         <div id="alerts-view" class="px-4 py-8 fade-enter hidden">
-            <h2 class="text-3xl font-black text-gray-800 mb-6 text-center">Avisos e Ofertas</h2>
+            <div class="text-center mb-8">
+                <div class="w-20 h-20 bg-[#dcf8c6] text-[#25D366] rounded-full flex items-center justify-center mx-auto mb-4 border-4 border-white shadow-md">
+                    <i data-lucide="bell-ring" class="w-10 h-10"></i>
+                </div>
+                <h2 class="text-3xl font-black text-gray-800 mb-2">Clube VIP</h2>
+                <p class="text-gray-600">Promoções relâmpago e avisos importantes.</p>
+            </div>
             <div id="groups-container" class="flex flex-col gap-3"></div>
         </div>
 
@@ -143,17 +200,21 @@
 
     <nav class="fixed bottom-0 w-full bg-white border-t border-gray-200 shadow-[0_-10px_20px_rgba(0,0,0,0.03)] z-30">
         <div class="max-w-3xl mx-auto flex justify-around items-center h-[70px] pb-safe-offset">
-            <button onclick="window.showView('home')" id="nav-home" class="nav-btn text-primaria flex flex-col items-center justify-center w-full h-full">
-                <i data-lucide="layout-dashboard" class="w-6 h-6 mb-1"></i><span class="text-[10px] font-bold">Vitrine</span>
+            <button onclick="window.showView('home')" id="nav-home" class="nav-btn text-primaria flex flex-col items-center justify-center w-full h-full transition-colors">
+                <i data-lucide="layout-dashboard" class="w-6 h-6 mb-1 scale-110 transition-transform"></i>
+                <span class="text-[10px] font-bold tracking-wide">Vitrine</span>
             </button>
-            <button onclick="window.showView('catalog', 'product')" id="nav-product" class="nav-btn text-gray-400 flex flex-col items-center justify-center w-full h-full">
-                <i data-lucide="shopping-bag" class="w-6 h-6 mb-1"></i><span class="text-[10px] font-bold">Produtos</span>
+            <button onclick="window.showView('catalog', 'product')" id="nav-product" class="nav-btn text-gray-400 hover:text-primaria flex flex-col items-center justify-center w-full h-full transition-colors">
+                <i data-lucide="shopping-bag" class="w-6 h-6 mb-1 transition-transform"></i>
+                <span class="text-[10px] font-bold tracking-wide">Produtos</span>
             </button>
-            <button onclick="window.showView('catalog', 'service')" id="nav-service" class="nav-btn text-gray-400 flex flex-col items-center justify-center w-full h-full">
-                <i data-lucide="scissors" class="w-6 h-6 mb-1"></i><span class="text-[10px] font-bold">Serviços</span>
+            <button onclick="window.showView('catalog', 'service')" id="nav-service" class="nav-btn text-gray-400 hover:text-primaria flex flex-col items-center justify-center w-full h-full transition-colors">
+                <i data-lucide="scissors" class="w-6 h-6 mb-1 transition-transform"></i>
+                <span class="text-[10px] font-bold tracking-wide">Serviços</span>
             </button>
-            <button onclick="window.showView('alerts')" id="nav-alerts" class="nav-btn text-gray-400 flex flex-col items-center justify-center w-full h-full">
-                <i data-lucide="bell" class="w-6 h-6 mb-1"></i><span class="text-[10px] font-bold">Avisos</span>
+            <button onclick="window.showView('alerts')" id="nav-alerts" class="nav-btn text-gray-400 hover:text-[#25D366] flex flex-col items-center justify-center w-full h-full transition-colors">
+                <i data-lucide="bell" class="w-6 h-6 mb-1 transition-transform"></i>
+                <span class="text-[10px] font-bold tracking-wide text-center leading-tight mt-1">Avisos</span>
             </button>
         </div>
     </nav>
@@ -172,6 +233,7 @@
         import { getAuth, signInAnonymously, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, onSnapshot, doc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
+        // CREDENCIAIS V2
         const firebaseConfig = {
             apiKey: "AIzaSyBcrhhlr6sPRy1wfhCBwyAucnTleQDWPUI",
             authDomain: "petlojas-saas.firebaseapp.com",
@@ -191,8 +253,9 @@
         window.currentStoreId = null;
         window.appItems = [];
         window.appGroups = [];
-        window.appSettings = { storeName: "Loja", whatsapp: "", mapsUrl: "" };
+        window.appSettings = { storeName: "Loja", whatsapp: "", mapsUrl: "", shareMessage: "" };
         window.cart = [];
+        window.currentUser = null;
 
         let currentView = 'home';
         let currentCatalogType = 'product'; 
@@ -216,7 +279,7 @@
         window.onload = async () => {
             lucide.createIcons();
             window.currentStoreId = await resolveTenant();
-            try { await signInAnonymously(auth); } catch(e) {}
+            try { const cr = await signInAnonymously(auth); window.currentUser = cr.user; } catch(e) {}
 
             // CARREGAR SETTINGS
             onSnapshot(doc(db, 'stores', window.currentStoreId, 'settings', 'general'), (docSnap) => {
@@ -228,10 +291,10 @@
                     if(data.logoUrl) document.getElementById('header-logo').src = data.logoUrl;
                     if(data.primaryColor) {
                         document.documentElement.style.setProperty('--cor-primaria', data.primaryColor);
-                        document.querySelector('meta[name="theme-color"]').setAttribute("content", data.primaryColor);
+                        document.querySelector('meta[name="theme-color"]')?.setAttribute("content", data.primaryColor);
                     }
                 }
-                // Remover Splash Screen
+                // Remover Splash Screen elegantemente
                 document.getElementById('loader').classList.add('opacity-0');
                 setTimeout(() => document.getElementById('loader').classList.add('hidden'), 500);
             });
@@ -284,6 +347,9 @@
             if (view === 'home') { document.getElementById('home-view').classList.remove('hidden'); renderFeed(); currentHistory = ['home']; } 
             else if (view === 'catalog') {
                 currentCatalogType = type;
+                const titleObj = document.getElementById('catalog-title'); const subObj = document.getElementById('catalog-subtitle');
+                if(type === 'product') { titleObj.innerHTML = `<i data-lucide="shopping-bag" class="w-6 h-6 text-primaria"></i> Produtos`; subObj.innerText = "Nossa vitrine de rações, brinquedos e acessórios."; } 
+                else { titleObj.innerHTML = `<i data-lucide="scissors" class="w-6 h-6 text-primaria"></i> Serviços`; subObj.innerText = "Banho, tosa, veterinário e muito mais."; }
                 document.getElementById('catalog-view').classList.remove('hidden'); renderCatalog(); currentHistory = ['catalog', type];
             }
             else if (view === 'alerts') { document.getElementById('alerts-view').classList.remove('hidden'); renderAlerts(); currentHistory = ['alerts']; }
@@ -319,65 +385,147 @@
             renderCatalog();
         };
 
+        const filterItems = (items) => {
+            let filtered = items;
+            if(currentSearchQuery) {
+                filtered = items.filter(item => (item.title && item.title.toLowerCase().includes(currentSearchQuery)) || (item.tags && item.tags.some(t => t.toLowerCase().includes(currentSearchQuery))));
+            }
+            const now = Date.now();
+            filtered = filtered.filter(item => {
+                if (item.permanent) return true;
+                if (item.expiresAt && item.expiresAt >= now) return true;
+                return false; 
+            });
+            return filtered;
+        };
+
         // RENDERERS
         window.renderFeed = () => {
             const container = document.getElementById('feed-container');
-            const items = window.appItems.filter(i => i.vitrine);
-            if(items.length === 0) { container.innerHTML = `<p class="text-center py-10 text-gray-400">Sem destaques.</p>`; return; }
-            container.innerHTML = items.map(item => `
-                <div onclick="window.openDetail('${item.id}')" class="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden cursor-pointer group">
-                    <div class="aspect-square bg-gray-50 relative overflow-hidden">
-                        <img src="${window.getDriveImageUrl(item.image)}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700">
-                    </div>
+            const items = filterItems(window.appItems.filter(i => i.vitrine));
+            if(items.length === 0) { container.innerHTML = `<p class="text-center py-10 text-gray-400">Sem destaques no momento.</p>`; return; }
+            container.innerHTML = items.map(item => {
+                const ytId = window.getYoutubeId(item.youtubeUrl);
+                const images = item.images && item.images.length > 0 ? item.images : (item.image ? [item.image] : []);
+                let mediaHtml = '';
+
+                if (ytId) {
+                    mediaHtml = `<div class="aspect-[9/16] bg-black relative overflow-hidden group"><iframe class="absolute inset-0 w-full h-full pointer-events-none transform scale-[1.05]" src="https://www.youtube.com/embed/${ytId}?autoplay=1&mute=1&controls=0&modestbranding=1&rel=0&loop=1&playlist=${ytId}&playsinline=1" frameborder="0" allow="autoplay; encrypted-media"></iframe><div class="absolute inset-0 z-10 flex items-center justify-center bg-black/10 group-hover:bg-black/20 transition-colors"><div class="w-16 h-16 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center border border-white/30 group-hover:bg-white/30 transition-all shadow-2xl group-hover:scale-110"><svg class="w-7 h-7 text-white ml-1 shadow-sm" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></div></div></div>`;
+                } else if (images.length > 1) {
+                    const carouselId = `feed-carousel-${item.id}`;
+                    const slides = images.map(img => `<img src="${window.getDriveImageUrl(img)}" class="w-full h-full object-cover flex-shrink-0 snap-center" onerror="this.onerror=null;this.src='https://placehold.co/600x600?text=Imagem'">`).join('');
+                    mediaHtml = `
+                    <div class="aspect-square bg-gray-100 relative overflow-hidden group">
+                        <div id="${carouselId}" class="flex w-full h-full overflow-x-auto snap-x snap-mandatory no-scrollbar scroll-smooth" onscroll="window.updateCarouselDots('${carouselId}')">${slides}</div>
+                        <div class="absolute top-2 left-2 bg-black/50 text-white text-[10px] font-bold px-2 py-1 rounded-md backdrop-blur-sm z-10 pointer-events-none flex items-center gap-1"><i data-lucide="images" class="w-3 h-3"></i> ${images.length}</div>
+                        <div id="dots-${carouselId}" class="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-1.5 z-40 pointer-events-none">
+                            ${images.map((_, i) => `<div class="w-2 h-2 rounded-full border border-black/20 transition-colors duration-300 shadow-md ${i === 0 ? 'bg-white' : 'bg-white/50'}"></div>`).join('')}
+                        </div>
+                    </div>`;
+                } else {
+                    const imgUrl = images.length === 1 ? window.getDriveImageUrl(images[0]) : 'https://placehold.co/600x600?text=Sem+Imagem';
+                    mediaHtml = `<div class="aspect-square bg-gray-100 relative overflow-hidden"><img src="${imgUrl}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" onerror="this.onerror=null;this.src='https://placehold.co/600x600?text=Sem+Imagem'"></div>`;
+                }
+                
+                const tagsHtml = item.tags && item.tags.length > 0 ? `<div class="flex gap-2 mb-3 flex-wrap">${item.tags.map(tag => `<button onclick="event.stopPropagation(); window.filterByTag('${tag}'); window.showView('catalog', 'product')" class="text-[11px] bg-gray-100 border border-gray-200 text-gray-600 px-3 py-1 rounded-lg uppercase font-black tracking-wider shadow-sm cursor-pointer hover:bg-gray-200 transition-colors">${tag}</button>`).join('')}</div>` : '';
+
+                return `
+                <div onclick="window.openDetail('${item.id}')" class="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden cursor-pointer relative group">
+                    ${item.type === 'offer' ? `<div class="absolute top-4 right-4 bg-orange-500 text-white text-xs font-black px-4 py-1.5 rounded-full shadow-lg uppercase tracking-wider z-20">Oferta</div>` : ''}
+                    ${mediaHtml}
                     <div class="p-5">
-                        <h3 class="text-xl font-black text-gray-800 mb-1">${item.title}</h3>
-                        <p class="text-2xl font-black text-primaria">${item.price}</p>
-                        <button class="mt-4 w-full bg-gray-50 text-primaria font-bold py-3 rounded-xl">Ver Detalhes</button>
+                        ${tagsHtml}
+                        <h3 class="text-xl font-black text-gray-800 mb-1 leading-tight">${item.title || 'Sem título'}</h3>
+                        <div class="flex items-end gap-2 mt-4"><span class="text-2xl font-black text-primaria">${item.price || 'R$ 0,00'}</span>${item.originalPrice ? `<span class="text-sm text-gray-400 line-through mb-1">${item.originalPrice}</span>` : ''}</div>
+                        <div class="mt-4 pt-4 border-t border-gray-100"><button onclick="event.stopPropagation(); window.openDetail('${item.id}')" class="w-full bg-gray-50 text-primaria font-bold py-3 rounded-xl flex items-center justify-center gap-2 hover:bg-gray-100 transition-colors">Ver Detalhes <i data-lucide="arrow-right" class="w-4 h-4"></i></button></div>
                     </div>
-                </div>`).join('');
+                </div>`;
+            }).join('');
+            lucide.createIcons();
         };
 
         window.renderCatalog = () => {
             const container = document.getElementById('catalog-container');
-            const filtered = window.appItems.filter(i => {
-                const matchType = i.type === currentCatalogType;
-                const matchSearch = !currentSearchQuery || i.title.toLowerCase().includes(currentSearchQuery) || (i.tags && i.tags.some(t => t.toLowerCase().includes(currentSearchQuery)));
-                return matchType && matchSearch;
+            let items = filterItems(window.appItems.filter(item => currentSearchQuery ? (item.type === 'product' || item.type === 'service') : item.type === currentCatalogType));
+            
+            const tagsContainer = document.getElementById('quick-tags');
+            let allTags = new Set();
+            items.forEach(i => (i.tags||[]).forEach(t => allTags.add(t)));
+            let tagsHtml = `<button onclick="window.filterByTag('')" class="px-4 py-1.5 ${currentSearchQuery === '' ? 'bg-primaria text-white' : 'bg-gray-200 text-gray-700'} text-xs font-bold rounded-full whitespace-nowrap shadow-sm transition-colors">Todos</button>`;
+            Array.from(allTags).forEach(tag => {
+                tagsHtml += `<button onclick="window.filterByTag('${tag}')" class="px-4 py-1.5 ${currentSearchQuery === tag.toLowerCase() ? 'bg-primaria text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'} text-xs font-bold rounded-full whitespace-nowrap shadow-sm transition-colors">${tag}</button>`;
             });
+            tagsContainer.innerHTML = tagsHtml;
 
-            container.innerHTML = filtered.map(item => `
-                <div onclick="window.openDetail('${item.id}')" class="bg-white rounded-2xl shadow-sm border border-gray-100 p-3 flex flex-col h-full cursor-pointer">
-                    <img src="${window.getDriveImageUrl(item.image)}" class="aspect-square object-cover rounded-xl mb-2">
-                    <h3 class="text-sm font-bold text-gray-800 line-clamp-2 leading-tight">${item.title}</h3>
-                    <p class="text-primaria font-black mt-auto pt-2">${item.price}</p>
-                </div>`).join('') || '<p class="col-span-full text-center py-10 text-gray-400">Nenhum item.</p>';
+            if(items.length === 0) { container.innerHTML = `<div class="col-span-full py-10 text-center"><p class="text-gray-400">Nenhum item encontrado.</p></div>`; return; }
+
+            container.innerHTML = items.map(item => {
+                const imgUrl = item.images && item.images.length > 0 ? window.getDriveImageUrl(item.images[0]) : window.getDriveImageUrl(item.image);
+                const isCarousel = item.images && item.images.length > 1;
+
+                return `
+                <div onclick="window.openDetail('${item.id}')" class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden cursor-pointer group flex flex-col h-full relative">
+                    ${item.type === 'offer' ? `<div class="absolute top-2 right-2 bg-orange-500 text-white text-[9px] font-black px-2 py-0.5 rounded-md shadow uppercase tracking-wider z-10">Oferta</div>` : ''}
+                    ${isCarousel ? `<div class="absolute top-2 left-2 bg-black/50 text-white text-[9px] font-bold px-1.5 py-0.5 rounded z-10 pointer-events-none flex items-center gap-1"><i data-lucide="images" class="w-3 h-3"></i></div>` : ''}
+                    <div class="aspect-square bg-gray-100 relative overflow-hidden"><img src="${imgUrl || 'https://placehold.co/300x300?text=Sem+Foto'}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" onerror="this.onerror=null;this.src='https://placehold.co/300x300?text=Sem+Foto'"></div>
+                    <div class="p-3 flex flex-col flex-grow"><h3 class="text-sm font-bold text-gray-800 leading-tight mb-2 line-clamp-2">${item.title || 'Sem título'}</h3><div class="mt-auto"><p class="text-lg font-black text-primaria">${item.price || 'R$ 0,00'}</p></div></div>
+                </div>`;
+            }).join('');
+            lucide.createIcons();
         };
 
         window.openDetail = (id) => {
-            window.currentDetailId = id;
+            window.currentDetailId = id; 
             const item = window.appItems.find(x => x.id === id); if(!item) return;
-            showView('detail');
+            
+            ['home-view', 'catalog-view', 'alerts-view', 'cart-view'].forEach(vid => document.getElementById(vid).classList.add('hidden')); 
+            document.getElementById('detail-view').classList.remove('hidden'); currentView = 'detail'; window.scrollTo(0, 0);
+            
             const container = document.getElementById('detail-container');
-            container.innerHTML = `
-                <img src="${window.getDriveImageUrl(item.image)}" class="w-full aspect-square object-cover">
-                <div class="p-6">
-                    <h1 class="text-2xl font-black text-gray-800 mb-2">${item.title}</h1>
-                    <p class="text-3xl font-black text-primaria mb-6">${item.price}</p>
-                    <p class="text-gray-600 mb-8 whitespace-pre-wrap">${item.description || ''}</p>
-                    <button onclick="window.addToCart('${item.id}')" class="w-full bg-primaria text-white py-4 rounded-2xl font-black uppercase shadow-md">Adicionar ao Carrinho</button>
+            const ytId = window.getYoutubeId(item.youtubeUrl);
+            const images = item.images && item.images.length > 0 ? item.images : (item.image ? [item.image] : []);
+            let mediaHtml = '';
+
+            if (ytId) {
+                mediaHtml = `<div class="aspect-[9/16] w-full relative bg-black"><iframe class="absolute inset-0 w-full h-full" src="https://www.youtube.com/embed/${ytId}?autoplay=1&mute=0&controls=1&modestbranding=1&rel=0&playsinline=1" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe></div>`;
+            } else if (images.length > 1) {
+                const carouselId = `detail-carousel-${item.id}`;
+                const slides = images.map(img => `<img src="${window.getDriveImageUrl(img)}" class="w-full h-full object-cover flex-shrink-0 snap-center" onerror="this.onerror=null;this.src='https://placehold.co/600x600?text=Imagem'">`).join('');
+                mediaHtml = `
+                <div class="aspect-square w-full relative bg-gray-100 overflow-hidden">
+                    <div id="${carouselId}" class="flex w-full h-full overflow-x-auto snap-x snap-mandatory no-scrollbar scroll-smooth" onscroll="window.updateCarouselDots('${carouselId}')">${slides}</div>
+                    <div class="absolute top-3 right-3 bg-black/50 text-white text-xs font-bold px-3 py-1.5 rounded-lg backdrop-blur-sm z-10 pointer-events-none flex items-center gap-1"><i data-lucide="images" class="w-4 h-4"></i> ${images.length} fotos</div>
+                    <div id="dots-${carouselId}" class="absolute bottom-5 left-1/2 transform -translate-x-1/2 flex gap-1.5 z-40 pointer-events-none">
+                        ${images.map((_, i) => `<div class="w-2 h-2 rounded-full border border-black/20 transition-colors duration-300 shadow-md ${i === 0 ? 'bg-white' : 'bg-white/50'}"></div>`).join('')}
+                    </div>
                 </div>`;
+            } else {
+                const imgUrl = images.length === 1 ? window.getDriveImageUrl(images[0]) : 'https://placehold.co/600x600?text=Sem+Imagem';
+                mediaHtml = `<div class="aspect-square w-full relative bg-gray-100"><img src="${imgUrl}" class="w-full h-full object-cover" onerror="this.onerror=null;this.src='https://placehold.co/600x600?text=Sem+Imagem'"></div>`;
+            }
+
+            const tagsHtml = item.tags && item.tags.length > 0 ? `<div class="flex gap-2 mb-4 flex-wrap">${item.tags.map(tag => `<button onclick="window.filterByTag('${tag}'); window.showView('catalog', 'product')" class="text-xs bg-gray-100 border border-gray-200 text-gray-600 px-4 py-1.5 rounded-xl uppercase font-black tracking-widest shadow-sm cursor-pointer hover:bg-gray-200 transition-colors">${tag}</button>`).join('')}</div>` : '';
+            const descHtml = item.description ? `<p class="text-gray-600 leading-relaxed mb-8 whitespace-pre-wrap">${item.description}</p>` : '';
+
+            container.innerHTML = `
+                <div class="relative">${mediaHtml}${item.type === 'offer' ? `<div class="absolute top-4 left-4 bg-orange-500 text-white text-xs font-black px-4 py-1.5 rounded-full shadow-lg uppercase tracking-wider z-10">Oferta</div>` : ''}</div>
+                <div class="p-6">
+                    ${tagsHtml}
+                    <h1 class="text-2xl sm:text-3xl font-black text-gray-800 leading-tight mb-2">${item.title || 'Sem título'}</h1>
+                    <div class="flex items-end gap-3 mb-6"><span class="text-3xl font-black text-primaria">${item.price || 'R$ 0,00'}</span>${item.originalPrice ? `<span class="text-lg text-gray-400 line-through mb-1">${item.originalPrice}</span>` : ''}</div>
+                    ${descHtml}
+                    <button onclick="window.addToCart('${item.id}')" class="w-full flex justify-center items-center gap-2 bg-primaria text-white py-4 px-6 rounded-2xl font-black text-base sm:text-lg uppercase tracking-wide shadow-md transition-all active:scale-95 mb-4"><i data-lucide="shopping-cart" class="w-6 h-6"></i> Adicionar ao Carrinho</button>
+                </div>`;
+            lucide.createIcons();
         };
 
         window.renderAlerts = () => {
             const container = document.getElementById('groups-container');
-            container.innerHTML = window.appGroups.map(g => `
-                <a href="${g.link}" target="_blank" class="flex items-center justify-between bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
-                    <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 rounded-full bg-green-100 text-green-600 flex items-center justify-center"><i data-lucide="message-circle"></i></div>
-                        <p class="font-bold text-gray-800">${g.name}</p>
-                    </div>
-                    <button class="bg-[#25D366] text-white px-4 py-2 rounded-lg text-sm font-bold">Entrar</button>
-                </a>`).join('') || '<p class="text-center text-gray-400">Sem avisos.</p>';
+            if(window.appGroups.length === 0) { container.innerHTML = `<p class="text-center text-gray-400">Nenhum grupo disponível.</p>`; return; }
+            container.innerHTML = window.appGroups.map(g => {
+                if(g.status === 'full') return `<a href="#" onclick="return false;" class="flex items-center justify-between bg-white p-4 rounded-xl shadow-sm border border-gray-200 opacity-60"><div class="flex items-center gap-3"><div class="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-500"><i data-lucide="lock" class="w-5 h-5"></i></div><div><p class="font-bold text-gray-800">${g.name}</p><p class="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Lotação Máxima</p></div></div><button class="bg-gray-200 text-gray-500 px-4 py-2 rounded-lg text-sm font-bold cursor-not-allowed">Lotado</button></a>`;
+                return `<a href="${g.link.startsWith('http') ? g.link : 'https://'+g.link}" target="_blank" class="flex items-center justify-between bg-white p-4 rounded-xl shadow-sm border border-green-200 hover:border-green-500 transition-all group"><div class="flex items-center gap-3"><div class="w-10 h-10 rounded-full bg-[#dcf8c6] flex items-center justify-center text-[#25D366]"><i data-lucide="message-circle" class="w-5 h-5"></i></div><div><p class="font-bold text-gray-800">${g.name}</p><p class="text-[10px] text-[#25D366] font-bold uppercase tracking-widest">Vagas Abertas</p></div></div><button class="bg-[#25D366] text-white px-4 py-2 rounded-lg text-sm font-bold shadow-md hover:bg-[#1ebd5a] transition-colors">Entrar</button></a>`;
+            }).join('');
             lucide.createIcons();
         };
 
@@ -387,7 +535,19 @@
             const existing = window.cart.find(x => x.id === id);
             if(existing) existing.quantity += 1; else window.cart.push({ ...item, quantity: 1 });
             window.updateCartUI();
-            window.showSystemMessage("Adicionado!", `${item.title} está no seu carrinho.`, "success");
+            
+            const modal = document.getElementById('msg-modal');
+            const box = document.getElementById('msg-modal-box');
+            document.getElementById('msg-title').innerText = "Adicionado";
+            document.getElementById('msg-text').innerText = `${item.title} adicionado ao carrinho.`;
+            document.getElementById('msg-icon').className = "mx-auto w-16 h-16 rounded-full mb-4 flex items-center justify-center bg-green-100 text-green-500";
+            document.getElementById('msg-icon').innerHTML = '<i data-lucide="check-circle" class="w-8 h-8"></i>';
+            document.getElementById('msg-buttons').innerHTML = `
+                <button onclick="window.closeSystemMessage(); window.showView('cart')" class="w-full py-3 rounded-xl font-black text-sm text-white bg-primaria shadow-sm mb-2">Ver Carrinho</button>
+                <button onclick="window.closeSystemMessage(); window.showView('catalog', 'product')" class="w-full py-3 rounded-xl font-bold text-sm text-gray-500 bg-gray-100 hover:bg-gray-200">Continuar Comprando</button>
+            `;
+            modal.classList.remove('hidden'); setTimeout(() => { modal.classList.remove('opacity-0'); box.classList.remove('scale-95'); }, 10);
+            lucide.createIcons();
         };
 
         window.updateCartUI = () => {
@@ -396,54 +556,76 @@
             if(totalItems > 0) { badge.innerText = totalItems; badge.classList.remove('hidden'); } else badge.classList.add('hidden');
 
             const container = document.getElementById('cart-items-container');
-            if(window.cart.length === 0) { container.innerHTML = ''; document.getElementById('cart-summary').classList.add('hidden'); document.getElementById('cart-empty').classList.remove('hidden'); return; }
+            if(!container) return;
+            if(window.cart.length === 0) {
+                container.innerHTML = ''; document.getElementById('cart-summary').classList.add('hidden'); document.getElementById('cart-empty').classList.remove('hidden'); return;
+            }
 
             document.getElementById('cart-empty').classList.add('hidden'); document.getElementById('cart-summary').classList.remove('hidden');
-            let total = 0;
+            let totalValue = 0;
             container.innerHTML = window.cart.map(item => {
-                const sub = window.parseCurrency(item.price) * item.quantity; total += sub;
+                const sub = window.parseCurrency(item.price) * item.quantity; totalValue += sub;
+                const imgUrl = item.images && item.images.length > 0 ? window.getDriveImageUrl(item.images[0]) : window.getDriveImageUrl(item.image);
                 return `
                 <div class="flex items-center gap-3 bg-white p-3 rounded-2xl border border-gray-100 shadow-sm">
-                    <img src="${window.getDriveImageUrl(item.image)}" class="w-16 h-16 object-cover rounded-xl">
+                    <img src="${imgUrl || 'https://placehold.co/100?text=Foto'}" class="w-16 h-16 sm:w-20 sm:h-20 object-cover rounded-xl shrink-0" onerror="this.src='https://placehold.co/100?text=Foto'">
                     <div class="flex-1 min-w-0">
-                        <p class="text-sm font-bold text-gray-800 line-clamp-1">${item.title}</p>
+                        <p class="text-sm font-bold text-gray-800 line-clamp-1 sm:line-clamp-2">${item.title}</p>
                         <p class="text-primaria font-black text-sm">${item.price}</p>
                     </div>
-                    <div class="flex items-center gap-2 bg-gray-50 rounded-lg p-1 border border-gray-200">
-                        <button onclick="window.changeQty('${item.id}', -1)" class="w-6 h-6"><i data-lucide="minus" class="w-3 h-3 mx-auto"></i></button>
-                        <span class="text-xs font-black w-4 text-center">${item.quantity}</span>
-                        <button onclick="window.changeQty('${item.id}', 1)" class="w-6 h-6"><i data-lucide="plus" class="w-3 h-3 mx-auto"></i></button>
+                    <div class="flex flex-col items-end gap-2 shrink-0">
+                        <button onclick="window.removeFromCart('${item.id}')" class="text-red-400 p-1"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                        <div class="flex items-center gap-2 bg-gray-50 rounded-lg p-1 border border-gray-200">
+                            <button onclick="window.changeQuantity('${item.id}', -1)" class="w-6 h-6 flex items-center justify-center rounded-md"><i data-lucide="minus" class="w-3 h-3"></i></button>
+                            <span class="text-xs font-black w-4 text-center">${item.quantity}</span>
+                            <button onclick="window.changeQuantity('${item.id}', 1)" class="w-6 h-6 flex items-center justify-center rounded-md"><i data-lucide="plus" class="w-3 h-3"></i></button>
+                        </div>
                     </div>
                 </div>`;
             }).join('');
-            document.getElementById('cart-total').innerText = window.formatCurrency(total);
+            document.getElementById('cart-total').innerText = window.formatCurrency(totalValue);
             lucide.createIcons();
         };
 
-        window.changeQty = (id, d) => { const i = window.cart.find(x => x.id === id); if(i) { i.quantity += d; if(i.quantity <= 0) window.cart = window.cart.filter(x => x.id !== id); window.updateCartUI(); } };
+        window.changeQuantity = (id, delta) => { const item = window.cart.find(x => x.id === id); if(item) { item.quantity += delta; if(item.quantity <= 0) window.removeFromCart(id); else window.updateCartUI(); } };
+        window.removeFromCart = (id) => { window.cart = window.cart.filter(x => x.id !== id); window.updateCartUI(); };
 
         window.checkoutWhatsApp = () => {
-            let text = "Olá! Gostaria de fazer o seguinte pedido:%0A%0A";
-            window.cart.forEach(i => text += `🐾 ${i.quantity}x ${i.title}%0A`);
-            const total = document.getElementById('cart-total').innerText;
-            text += `%0A*Total: ${total}*%0AQual o procedimento?`;
-            window.open(`https://wa.me/${window.appSettings.whatsapp.replace(/\D/g, '')}?text=${text}`, '_blank');
+            if(window.cart.length === 0 || !window.appSettings.whatsapp) return;
+            let text = "Olá! Acessei a loja digital e gostaria de fazer o pedido:%0A%0A";
+            window.cart.forEach(item => {
+                const sub = window.parseCurrency(item.price) * item.quantity;
+                text += `🐾 ${item.quantity}x *${item.title}*%0A  Subtotal: ${window.formatCurrency(sub)}%0A%0A`;
+            });
+            const total = window.cart.reduce((sum, i) => sum + (window.parseCurrency(i.price) * i.quantity), 0);
+            text += `*Total: ${window.formatCurrency(total)}*%0A%0AQual o procedimento?`;
+            const waNum = window.appSettings.whatsapp.replace(/\D/g, ''); 
+            window.open(`https://wa.me/${waNum}?text=${text}`, '_blank');
         };
 
-        // SISTEMA DE MENSAGENS
+        // UTILITÁRIOS 
         window.showSystemMessage = (title, text, type) => {
             const m = document.getElementById('msg-modal');
             document.getElementById('msg-title').innerText = title;
             document.getElementById('msg-text').innerText = text;
             const icon = document.getElementById('msg-icon');
-            icon.className = `mx-auto w-12 h-12 rounded-full mb-4 flex items-center justify-center ${type==='success'?'bg-green-100 text-green-600':'bg-blue-100 text-blue-600'}`;
-            icon.innerHTML = `<i data-lucide="${type==='success'?'check':'info'}"></i>`;
+            icon.className = `mx-auto w-12 h-12 rounded-full mb-4 flex items-center justify-center ${type==='success'?'bg-green-100 text-green-600':(type==='error'?'bg-red-100 text-red-600':'bg-blue-100 text-blue-600')}`;
+            icon.innerHTML = `<i data-lucide="${type==='success'?'check':(type==='error'?'alert-triangle':'info')}"></i>`;
             document.getElementById('msg-buttons').innerHTML = `<button onclick="window.closeSystemMessage()" class="w-full bg-slate-800 text-white py-3 rounded-xl font-bold">Entendido</button>`;
             m.classList.remove('hidden'); setTimeout(() => m.classList.remove('opacity-0'), 10); lucide.createIcons();
         };
 
         window.closeSystemMessage = () => { document.getElementById('msg-modal').classList.add('opacity-0'); setTimeout(() => document.getElementById('msg-modal').classList.add('hidden'), 300); };
-        window.shareApp = () => { window.open(`https://wa.me/?text=Conheça a nossa loja: ${window.location.href}`, '_blank'); };
+        window.scrollCarousel = (id, dir) => { const c = document.getElementById(id); if (c) c.scrollBy({ left: dir * c.clientWidth, behavior: 'smooth' }); };
+        window.updateCarouselDots = (id) => {
+            const c = document.getElementById(id); const dots = document.getElementById(`dots-${id}`); if (!c || !dots) return;
+            const idx = Math.round(c.scrollLeft / c.clientWidth);
+            Array.from(dots.children).forEach((dot, i) => dot.className = i === idx ? 'w-2 h-2 rounded-full shadow-md bg-white' : 'w-2 h-2 rounded-full shadow-md bg-white/50');
+        };
+        window.shareApp = () => {
+            const text = `🐾 *${window.appSettings.storeName || 'Loja'}*\n\n${window.appSettings.shareMessage || ''}\n\n📲 Acesse:\n👉 ${window.location.href}`;
+            window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+        };
         window.openLocation = () => { if(window.appSettings.mapsUrl) window.open(window.appSettings.mapsUrl, '_blank'); };
 
     </script>

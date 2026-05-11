@@ -15,12 +15,9 @@
     
     <style>
         :root {
-            /* Variáveis que o Firebase irá substituir dinamicamente */
             --cor-fundo: #f8fafc;
             --cor-primaria: #0f766e; 
-            --cor-secundaria: #f59e0b; 
             --cor-texto: #334155;
-            --cor-zap: #25D366;
         }
 
         body {
@@ -41,10 +38,8 @@
         
         .pb-safe { padding-bottom: calc(80px + env(safe-area-inset-bottom)); }
         .hidden { display: none !important; }
-        
         .modal-overlay { background-color: rgba(0, 0, 0, 0.6); backdrop-filter: blur(4px); }
         
-        /* Classes auxiliares para Whitelabel */
         .text-primaria { color: var(--cor-primaria) !important; }
         .bg-primaria { background-color: var(--cor-primaria) !important; }
         .border-primaria { border-color: var(--cor-primaria) !important; }
@@ -91,7 +86,6 @@
 
     <div id="loader" class="fixed inset-0 z-50 bg-white flex flex-col items-center justify-center transition-opacity duration-500">
         <img id="splash-logo" src="" alt="Carregando Loja..." class="hidden w-40 h-40 sm:w-48 sm:h-48 object-contain mb-10 animate-pulse drop-shadow-2xl rounded-3xl" onerror="this.style.display='none'">
-        
         <div class="animate-spin rounded-full h-12 w-12 border-4 border-gray-100 mb-6" style="border-bottom-color: var(--cor-primaria);"></div>
         <p class="text-gray-400 font-black tracking-widest text-xs animate-pulse uppercase">A CONECTAR À LOJA...</p>
     </div>
@@ -110,27 +104,27 @@
                 <button id="install-btn" onclick="window.installApp()" class="hidden px-3 py-1.5 bg-primaria text-white text-[10px] sm:text-xs font-bold rounded-lg shadow-md active:scale-95 transition-all flex items-center gap-1 uppercase tracking-wider">
                     <i data-lucide="download" class="w-3 h-3 sm:w-4 sm:h-4"></i> Instalar
                 </button>
-
-                <button onclick="window.shareApp()" class="p-2 text-gray-500 hover:text-primaria bg-gray-50 rounded-full border border-gray-100 shadow-sm" title="Compartilhar">
+                <button onclick="window.shareApp()" class="p-2 text-gray-500 hover:text-primaria bg-gray-50 rounded-full border border-gray-100 shadow-sm">
                     <i data-lucide="share-2" class="w-5 h-5"></i>
                 </button>
-                <button onclick="window.showView('cart')" class="relative p-2 text-gray-500 hover:text-primaria bg-gray-50 rounded-full border border-gray-100 shadow-sm" title="Carrinho">
+                <button onclick="window.openLocation()" class="p-2 text-gray-500 hover:text-primaria bg-gray-50 rounded-full border border-gray-100 shadow-sm">
+                    <i data-lucide="map-pin" class="w-5 h-5"></i>
+                </button>
+                <button onclick="window.showView('cart')" class="relative p-2 text-gray-500 hover:text-primaria bg-gray-50 rounded-full border border-gray-100 shadow-sm">
                     <i data-lucide="shopping-cart" class="w-5 h-5"></i>
                     <span id="cart-badge" class="hidden absolute -top-1 -right-1 bg-red-500 text-white text-[9px] font-black w-4 h-4 flex items-center justify-center rounded-full shadow-sm">0</span>
                 </button>
             </div>
         </div>
-        
         <div class="max-w-3xl mx-auto px-4 pb-3 mt-1">
             <div class="relative">
                 <i data-lucide="search" class="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400"></i>
-                <input type="text" id="searchInput" onkeyup="window.handleSearch(event)" placeholder="Buscar por ração, banho, acessórios..." class="w-full bg-gray-100 border-none text-gray-700 text-sm rounded-2xl pl-10 pr-4 py-2.5 focus:ring-2 focus:ring-primaria outline-none transition-all">
+                <input type="text" id="searchInput" onkeyup="window.handleSearch(event)" placeholder="Buscar por ração, banho, acessórios..." class="w-full bg-gray-100 border-none text-gray-700 text-sm rounded-2xl pl-10 pr-4 py-2.5 outline-none transition-all focus:ring-2 focus:ring-primaria">
             </div>
         </div>
     </header>
 
     <main class="flex-grow max-w-3xl w-full mx-auto pb-safe">
-
         <div id="home-view" class="px-4 py-6 fade-enter">
             <div class="mb-6">
                 <h2 class="text-2xl font-black text-gray-800">Vitrine</h2>
@@ -163,16 +157,12 @@
                     <span class="text-gray-500 font-bold">Total do Pedido:</span>
                     <span id="cart-total" class="text-2xl font-black text-primaria">R$ 0,00</span>
                 </div>
-                <div class="flex flex-col gap-3">
-                    <button onclick="window.checkoutWhatsApp()" class="w-full bg-[#25D366] hover:bg-[#1ebd5a] text-white py-4 rounded-xl font-black text-lg uppercase tracking-wide shadow-[0_5px_15px_rgba(37,211,102,0.3)] transition-all flex items-center justify-center gap-2">
-                        <i data-lucide="send" class="w-5 h-5"></i> Fechar Pedido
-                    </button>
-                </div>
+                <button onclick="window.checkoutWhatsApp()" class="w-full bg-[#25D366] text-white py-4 rounded-xl font-black text-lg uppercase shadow-md flex items-center justify-center gap-2 active:scale-95 transition-transform">
+                    <i data-lucide="send" class="w-5 h-5"></i> Fechar Pedido
+                </button>
             </div>
             <div id="cart-empty" class="text-center py-12">
-                <div class="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4 text-gray-300">
-                    <i data-lucide="shopping-cart" class="w-10 h-10"></i>
-                </div>
+                <div class="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4 text-gray-300"><i data-lucide="shopping-cart" class="w-10 h-10"></i></div>
                 <p class="text-gray-500 font-medium">O carrinho está vazio.</p>
                 <button onclick="window.showView('home')" class="mt-6 text-primaria font-bold bg-gray-100 px-6 py-2 rounded-xl">Voltar para a Vitrine</button>
             </div>
@@ -180,35 +170,20 @@
 
         <div id="alerts-view" class="px-4 py-8 fade-enter hidden">
             <div class="text-center mb-8">
-                <div class="w-20 h-20 bg-[#dcf8c6] text-[#25D366] rounded-full flex items-center justify-center mx-auto mb-4 border-4 border-white shadow-md">
-                    <i data-lucide="bell-ring" class="w-10 h-10"></i>
-                </div>
+                <div class="w-20 h-20 bg-[#dcf8c6] text-[#25D366] rounded-full flex items-center justify-center mx-auto mb-4 border-4 border-white shadow-md"><i data-lucide="bell-ring" class="w-10 h-10"></i></div>
                 <h2 class="text-3xl font-black text-gray-800 mb-2">Clube VIP</h2>
                 <p class="text-gray-600">Promoções relâmpago e avisos importantes.</p>
             </div>
             <div id="groups-container" class="flex flex-col gap-3"></div>
         </div>
-
     </main>
 
     <nav class="fixed bottom-0 w-full bg-white border-t border-gray-200 shadow-[0_-10px_20px_rgba(0,0,0,0.03)] z-30">
         <div class="max-w-3xl mx-auto flex justify-around items-center h-[70px] pb-safe-offset">
-            <button onclick="window.showView('home')" id="nav-home" class="nav-btn text-primaria flex flex-col items-center justify-center w-full h-full transition-colors">
-                <i data-lucide="layout-dashboard" class="w-6 h-6 mb-1 scale-110 transition-transform"></i>
-                <span class="text-[10px] font-bold tracking-wide">Vitrine</span>
-            </button>
-            <button onclick="window.showView('catalog', 'product')" id="nav-product" class="nav-btn text-gray-400 hover:text-primaria flex flex-col items-center justify-center w-full h-full transition-colors">
-                <i data-lucide="shopping-bag" class="w-6 h-6 mb-1 transition-transform"></i>
-                <span class="text-[10px] font-bold tracking-wide">Produtos</span>
-            </button>
-            <button onclick="window.showView('catalog', 'service')" id="nav-service" class="nav-btn text-gray-400 hover:text-primaria flex flex-col items-center justify-center w-full h-full transition-colors">
-                <i data-lucide="scissors" class="w-6 h-6 mb-1 transition-transform"></i>
-                <span class="text-[10px] font-bold tracking-wide">Serviços</span>
-            </button>
-            <button onclick="window.showView('alerts')" id="nav-alerts" class="nav-btn text-gray-400 hover:text-[#25D366] flex flex-col items-center justify-center w-full h-full transition-colors">
-                <i data-lucide="bell" class="w-6 h-6 mb-1 transition-transform"></i>
-                <span class="text-[10px] font-bold tracking-wide text-center leading-tight mt-1">Avisos</span>
-            </button>
+            <button onclick="window.showView('home')" id="nav-home" class="nav-btn text-primaria flex flex-col items-center justify-center w-full h-full transition-colors"><i data-lucide="layout-dashboard" class="w-6 h-6 mb-1 scale-110"></i><span class="text-[10px] font-bold">Vitrine</span></button>
+            <button onclick="window.showView('catalog', 'product')" id="nav-product" class="nav-btn text-gray-400 hover:text-primaria flex flex-col items-center justify-center w-full h-full transition-colors"><i data-lucide="shopping-bag" class="w-6 h-6 mb-1"></i><span class="text-[10px] font-bold">Produtos</span></button>
+            <button onclick="window.showView('catalog', 'service')" id="nav-service" class="nav-btn text-gray-400 hover:text-primaria flex flex-col items-center justify-center w-full h-full transition-colors"><i data-lucide="scissors" class="w-6 h-6 mb-1"></i><span class="text-[10px] font-bold">Serviços</span></button>
+            <button onclick="window.showView('alerts')" id="nav-alerts" class="nav-btn text-gray-400 hover:text-[#25D366] flex flex-col items-center justify-center w-full h-full transition-colors"><i data-lucide="bell" class="w-6 h-6 mb-1"></i><span class="text-[10px] font-bold">Avisos</span></button>
         </div>
     </nav>
 
@@ -226,7 +201,6 @@
         import { getAuth, signInAnonymously, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, onSnapshot, doc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // CREDENCIAIS V2
         const firebaseConfig = {
             apiKey: "AIzaSyBcrhhlr6sPRy1wfhCBwyAucnTleQDWPUI",
             authDomain: "petlojas-saas.firebaseapp.com",
@@ -240,7 +214,6 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        // FORÇAR PERSISTÊNCIA (SUPER COLA)
         setPersistence(auth, browserLocalPersistence).catch(console.error);
 
         window.currentStoreId = null;
@@ -248,14 +221,12 @@
         window.appGroups = [];
         window.appSettings = { storeName: "Loja", whatsapp: "", mapsUrl: "", shareMessage: "" };
         window.cart = [];
-        window.currentUser = null;
 
         let currentView = 'home';
         let currentCatalogType = 'product'; 
         let currentSearchQuery = '';
         let currentHistory = ['home'];
 
-        // MOTOR DE RESOLUÇÃO DE TENANT (DINÂMICO)
         async function resolveTenant() {
             const urlParams = new URLSearchParams(window.location.search);
             const host = window.location.hostname;
@@ -272,9 +243,8 @@
         window.onload = async () => {
             lucide.createIcons();
             window.currentStoreId = await resolveTenant();
-            try { const cr = await signInAnonymously(auth); window.currentUser = cr.user; } catch(e) {}
+            try { await signInAnonymously(auth); } catch(e) {}
 
-            // CARREGAR SETTINGS
             onSnapshot(doc(db, 'stores', window.currentStoreId, 'settings', 'general'), (docSnap) => {
                 if(docSnap.exists()) {
                     const data = docSnap.data();
@@ -288,20 +258,15 @@
                         document.getElementById('dynamic-theme-color').setAttribute("content", data.primaryColor);
                     }
 
-                    // --- MÁGICA DO MANIFEST DINÂMICO PARA INSTALAÇÃO PWA ---
                     if(data.logoUrl) {
                         document.getElementById('header-logo').src = data.logoUrl;
-                        
-                        // Atualiza o logo gigante da splash screen e revela
                         const splash = document.getElementById('splash-logo');
                         splash.src = data.logoUrl;
                         splash.classList.remove('hidden');
 
-                        // Atualiza favicons no navegador
                         document.getElementById('dynamic-favicon').href = data.logoUrl;
                         document.getElementById('dynamic-apple-icon').href = data.logoUrl;
 
-                        // Recria o PWA App manifest no exato momento para o telemóvel assumir os dados deste cliente
                         const startUrl = window.location.search ? "/" + window.location.search : "/";
                         const dynamicManifest = {
                             name: data.storeName || "Loja",
@@ -320,19 +285,16 @@
                     }
                 }
                 
-                // Remover Splash Screen elegantemente
                 setTimeout(() => {
                     document.getElementById('loader').classList.add('opacity-0');
                     setTimeout(() => document.getElementById('loader').classList.add('hidden'), 500);
-                }, 800); // Aguarda um momento extra para a logomarca ser admirada
+                }, 800);
             });
 
-            // CARREGAR ITEMS (Com Sanitização)
             onSnapshot(collection(db, 'stores', window.currentStoreId, 'items'), (snapshot) => {
                 window.appItems = []; 
                 snapshot.forEach(doc => {
                     let d = doc.data();
-                    // Limpeza de erros "undefined"
                     if(d.description === 'undefined') d.description = '';
                     if(Array.isArray(d.tags)) d.tags = d.tags.filter(t => t && t !== 'undefined'); else d.tags = [];
                     window.appItems.push({ id: doc.id, ...d });
@@ -343,14 +305,12 @@
                 if(currentView === 'detail' && window.currentDetailId) openDetail(window.currentDetailId);
             });
 
-            // CARREGAR GRUPOS
             onSnapshot(collection(db, 'stores', window.currentStoreId, 'groups'), (snapshot) => {
                 window.appGroups = []; snapshot.forEach(doc => window.appGroups.push({ id: doc.id, ...doc.data() }));
                 if(currentView === 'alerts') renderAlerts();
             });
         };
 
-        // UTILITÁRIOS DE MÍDIA E FORMATAÇÃO
         window.getDriveImageUrl = (url) => { 
             if (!url) return ""; 
             const match = url.match(/\/d\/([a-zA-Z0-9_-]+)/) || url.match(/id=([a-zA-Z0-9_-]+)/); 
@@ -367,7 +327,6 @@
         };
         window.formatCurrency = (num) => num.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
-        // NAVEGAÇÃO
         window.showView = (view, type = null) => {
             ['home-view', 'catalog-view', 'detail-view', 'alerts-view', 'cart-view'].forEach(id => document.getElementById(id).classList.add('hidden'));
             if(view !== 'detail' && view !== 'cart') { document.getElementById('searchInput').value = ''; currentSearchQuery = ''; }
@@ -386,9 +345,7 @@
             updateActiveNav(view, type); window.scrollTo(0, 0); lucide.createIcons();
         };
 
-        window.goBack = () => {
-            if(currentHistory[0] === 'catalog') showView('catalog', currentHistory[1]); else showView('home'); 
-        };
+        window.goBack = () => { if(currentHistory[0] === 'catalog') showView('catalog', currentHistory[1]); else showView('home'); };
 
         function updateActiveNav(view, type) {
             document.querySelectorAll('.nav-btn').forEach(btn => {
@@ -400,18 +357,13 @@
             if(active) { active.classList.remove('text-gray-400'); active.classList.add('text-primaria'); active.querySelector('i')?.classList.add('scale-110'); }
         }
 
-        // BUSCA E FILTROS
         window.handleSearch = (e) => {
             currentSearchQuery = e.target.value.toLowerCase();
             if(currentSearchQuery.length > 0 && currentView !== 'catalog') showView('catalog', 'product');
             else renderCatalog();
         };
 
-        window.filterByTag = (tag) => {
-            document.getElementById('searchInput').value = tag;
-            currentSearchQuery = tag.toLowerCase();
-            renderCatalog();
-        };
+        window.filterByTag = (tag) => { document.getElementById('searchInput').value = tag; currentSearchQuery = tag.toLowerCase(); renderCatalog(); };
 
         const filterItems = (items) => {
             let filtered = items;
@@ -427,34 +379,41 @@
             return filtered;
         };
 
-        // RENDERERS
+        // RENDER DE CARROSSEL UNIVERSAL
+        const buildCarouselHtml = (item, idPrefix) => {
+            const ytId = window.getYoutubeId(item.youtubeUrl);
+            const images = item.images && item.images.length > 0 ? item.images : (item.image ? [item.image] : []);
+            
+            if (ytId) {
+                return `<div class="aspect-[9/16] bg-black relative overflow-hidden group"><iframe class="absolute inset-0 w-full h-full pointer-events-none transform scale-[1.05]" src="https://www.youtube.com/embed/${ytId}?autoplay=1&mute=1&controls=0&modestbranding=1&rel=0&loop=1&playlist=${ytId}&playsinline=1" frameborder="0" allow="autoplay; encrypted-media"></iframe><div class="absolute inset-0 z-10 flex items-center justify-center bg-black/10 group-hover:bg-black/20 transition-colors"><div class="w-16 h-16 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center border border-white/30 group-hover:bg-white/30 transition-all shadow-2xl group-hover:scale-110"><svg class="w-7 h-7 text-white ml-1 shadow-sm" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></div></div></div>`;
+            } else if (images.length > 1) {
+                const carouselId = `${idPrefix}-carousel-${item.id}`;
+                const slides = images.map(img => `<img src="${window.getDriveImageUrl(img)}" class="w-full h-full object-cover flex-shrink-0 snap-center" onerror="this.src='https://placehold.co/600x600?text=Imagem'">`).join('');
+                return `
+                <div class="aspect-square bg-gray-100 relative overflow-hidden group">
+                    <div id="${carouselId}" class="flex w-full h-full overflow-x-auto snap-x snap-mandatory no-scrollbar scroll-smooth" onscroll="window.updateCarouselDots('${carouselId}')">${slides}</div>
+                    
+                    <button onclick="event.stopPropagation(); window.scrollCarousel('${carouselId}', -1)" class="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 sm:w-10 sm:h-10 bg-white/80 hover:bg-white text-gray-800 rounded-full flex items-center justify-center shadow-md backdrop-blur-sm transition-colors z-20"><i data-lucide="chevron-left" class="w-5 h-5"></i></button>
+                    <button onclick="event.stopPropagation(); window.scrollCarousel('${carouselId}', 1)" class="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 sm:w-10 sm:h-10 bg-white/80 hover:bg-white text-gray-800 rounded-full flex items-center justify-center shadow-md backdrop-blur-sm transition-colors z-20"><i data-lucide="chevron-right" class="w-5 h-5"></i></button>
+                    
+                    <div class="absolute top-2 left-2 bg-black/50 text-white text-[10px] font-bold px-2 py-1 rounded-md backdrop-blur-sm z-10 pointer-events-none flex items-center gap-1"><i data-lucide="images" class="w-3 h-3"></i> ${images.length}</div>
+                    
+                    <div id="dots-${carouselId}" class="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-1.5 z-40 pointer-events-none">
+                        ${images.map((_, i) => `<div class="w-2 h-2 rounded-full border border-black/20 transition-colors duration-300 shadow-md ${i === 0 ? 'bg-white' : 'bg-white/50'}"></div>`).join('')}
+                    </div>
+                </div>`;
+            } else {
+                const imgUrl = images.length === 1 ? window.getDriveImageUrl(images[0]) : 'https://placehold.co/600x600?text=Sem+Imagem';
+                return `<div class="aspect-square bg-gray-100 relative overflow-hidden"><img src="${imgUrl}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" onerror="this.src='https://placehold.co/600x600?text=Sem+Imagem'"></div>`;
+            }
+        };
+
         window.renderFeed = () => {
             const container = document.getElementById('feed-container');
             const items = filterItems(window.appItems.filter(i => i.vitrine));
             if(items.length === 0) { container.innerHTML = `<p class="text-center py-10 text-gray-400">Sem destaques no momento.</p>`; return; }
             container.innerHTML = items.map(item => {
-                const ytId = window.getYoutubeId(item.youtubeUrl);
-                const images = item.images && item.images.length > 0 ? item.images : (item.image ? [item.image] : []);
-                let mediaHtml = '';
-
-                if (ytId) {
-                    mediaHtml = `<div class="aspect-[9/16] bg-black relative overflow-hidden group"><iframe class="absolute inset-0 w-full h-full pointer-events-none transform scale-[1.05]" src="https://www.youtube.com/embed/${ytId}?autoplay=1&mute=1&controls=0&modestbranding=1&rel=0&loop=1&playlist=${ytId}&playsinline=1" frameborder="0" allow="autoplay; encrypted-media"></iframe><div class="absolute inset-0 z-10 flex items-center justify-center bg-black/10 group-hover:bg-black/20 transition-colors"><div class="w-16 h-16 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center border border-white/30 group-hover:bg-white/30 transition-all shadow-2xl group-hover:scale-110"><svg class="w-7 h-7 text-white ml-1 shadow-sm" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></div></div></div>`;
-                } else if (images.length > 1) {
-                    const carouselId = `feed-carousel-${item.id}`;
-                    const slides = images.map(img => `<img src="${window.getDriveImageUrl(img)}" class="w-full h-full object-cover flex-shrink-0 snap-center" onerror="this.onerror=null;this.src='https://placehold.co/600x600?text=Imagem'">`).join('');
-                    mediaHtml = `
-                    <div class="aspect-square bg-gray-100 relative overflow-hidden group">
-                        <div id="${carouselId}" class="flex w-full h-full overflow-x-auto snap-x snap-mandatory no-scrollbar scroll-smooth" onscroll="window.updateCarouselDots('${carouselId}')">${slides}</div>
-                        <div class="absolute top-2 left-2 bg-black/50 text-white text-[10px] font-bold px-2 py-1 rounded-md backdrop-blur-sm z-10 pointer-events-none flex items-center gap-1"><i data-lucide="images" class="w-3 h-3"></i> ${images.length}</div>
-                        <div id="dots-${carouselId}" class="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-1.5 z-40 pointer-events-none">
-                            ${images.map((_, i) => `<div class="w-2 h-2 rounded-full border border-black/20 transition-colors duration-300 shadow-md ${i === 0 ? 'bg-white' : 'bg-white/50'}"></div>`).join('')}
-                        </div>
-                    </div>`;
-                } else {
-                    const imgUrl = images.length === 1 ? window.getDriveImageUrl(images[0]) : 'https://placehold.co/600x600?text=Sem+Imagem';
-                    mediaHtml = `<div class="aspect-square bg-gray-100 relative overflow-hidden"><img src="${imgUrl}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" onerror="this.onerror=null;this.src='https://placehold.co/600x600?text=Sem+Imagem'"></div>`;
-                }
-                
+                const mediaHtml = buildCarouselHtml(item, 'feed');
                 const tagsHtml = item.tags && item.tags.length > 0 ? `<div class="flex gap-2 mb-3 flex-wrap">${item.tags.map(tag => `<button onclick="event.stopPropagation(); window.filterByTag('${tag}'); window.showView('catalog', 'product')" class="text-[11px] bg-gray-100 border border-gray-200 text-gray-600 px-3 py-1 rounded-lg uppercase font-black tracking-wider shadow-sm cursor-pointer hover:bg-gray-200 transition-colors">${tag}</button>`).join('')}</div>` : '';
 
                 return `
@@ -510,28 +469,7 @@
             document.getElementById('detail-view').classList.remove('hidden'); currentView = 'detail'; window.scrollTo(0, 0);
             
             const container = document.getElementById('detail-container');
-            const ytId = window.getYoutubeId(item.youtubeUrl);
-            const images = item.images && item.images.length > 0 ? item.images : (item.image ? [item.image] : []);
-            let mediaHtml = '';
-
-            if (ytId) {
-                mediaHtml = `<div class="aspect-[9/16] w-full relative bg-black"><iframe class="absolute inset-0 w-full h-full" src="https://www.youtube.com/embed/${ytId}?autoplay=1&mute=0&controls=1&modestbranding=1&rel=0&playsinline=1" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe></div>`;
-            } else if (images.length > 1) {
-                const carouselId = `detail-carousel-${item.id}`;
-                const slides = images.map(img => `<img src="${window.getDriveImageUrl(img)}" class="w-full h-full object-cover flex-shrink-0 snap-center" onerror="this.onerror=null;this.src='https://placehold.co/600x600?text=Imagem'">`).join('');
-                mediaHtml = `
-                <div class="aspect-square w-full relative bg-gray-100 overflow-hidden">
-                    <div id="${carouselId}" class="flex w-full h-full overflow-x-auto snap-x snap-mandatory no-scrollbar scroll-smooth" onscroll="window.updateCarouselDots('${carouselId}')">${slides}</div>
-                    <div class="absolute top-3 right-3 bg-black/50 text-white text-xs font-bold px-3 py-1.5 rounded-lg backdrop-blur-sm z-10 pointer-events-none flex items-center gap-1"><i data-lucide="images" class="w-4 h-4"></i> ${images.length} fotos</div>
-                    <div id="dots-${carouselId}" class="absolute bottom-5 left-1/2 transform -translate-x-1/2 flex gap-1.5 z-40 pointer-events-none">
-                        ${images.map((_, i) => `<div class="w-2 h-2 rounded-full border border-black/20 transition-colors duration-300 shadow-md ${i === 0 ? 'bg-white' : 'bg-white/50'}"></div>`).join('')}
-                    </div>
-                </div>`;
-            } else {
-                const imgUrl = images.length === 1 ? window.getDriveImageUrl(images[0]) : 'https://placehold.co/600x600?text=Sem+Imagem';
-                mediaHtml = `<div class="aspect-square w-full relative bg-gray-100"><img src="${imgUrl}" class="w-full h-full object-cover" onerror="this.onerror=null;this.src='https://placehold.co/600x600?text=Sem+Imagem'"></div>`;
-            }
-
+            const mediaHtml = buildCarouselHtml(item, 'detail');
             const tagsHtml = item.tags && item.tags.length > 0 ? `<div class="flex gap-2 mb-4 flex-wrap">${item.tags.map(tag => `<button onclick="window.filterByTag('${tag}'); window.showView('catalog', 'product')" class="text-xs bg-gray-100 border border-gray-200 text-gray-600 px-4 py-1.5 rounded-xl uppercase font-black tracking-widest shadow-sm cursor-pointer hover:bg-gray-200 transition-colors">${tag}</button>`).join('')}</div>` : '';
             const descHtml = item.description ? `<p class="text-gray-600 leading-relaxed mb-8 whitespace-pre-wrap">${item.description}</p>` : '';
 
@@ -557,7 +495,6 @@
             lucide.createIcons();
         };
 
-        // CARRINHO E CHECKOUT
         window.addToCart = (id) => {
             const item = window.appItems.find(x => x.id === id); if(!item) return;
             const existing = window.cart.find(x => x.id === id);
@@ -631,7 +568,6 @@
             window.open(`https://wa.me/${waNum}?text=${text}`, '_blank');
         };
 
-        // UTILITÁRIOS 
         window.showSystemMessage = (title, text, type) => {
             const m = document.getElementById('msg-modal');
             document.getElementById('msg-title').innerText = title;
@@ -644,12 +580,16 @@
         };
 
         window.closeSystemMessage = () => { document.getElementById('msg-modal').classList.add('opacity-0'); setTimeout(() => document.getElementById('msg-modal').classList.add('hidden'), 300); };
-        
+        window.scrollCarousel = (id, dir) => { const c = document.getElementById(id); if (c) c.scrollBy({ left: dir * c.clientWidth, behavior: 'smooth' }); };
+        window.updateCarouselDots = (id) => {
+            const c = document.getElementById(id); const dots = document.getElementById(`dots-${id}`); if (!c || !dots) return;
+            const idx = Math.round(c.scrollLeft / c.clientWidth);
+            Array.from(dots.children).forEach((dot, i) => dot.className = i === idx ? 'w-2 h-2 rounded-full shadow-md bg-white' : 'w-2 h-2 rounded-full shadow-md bg-white/50');
+        };
         window.shareApp = () => {
             const text = `🐾 *${window.appSettings.storeName || 'Loja'}*\n\n${window.appSettings.shareMessage || ''}\n\n📲 Acesse e instale o nosso App:\n👉 ${window.location.href}`;
             window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
         };
-        
         window.openLocation = () => { if(window.appSettings.mapsUrl) window.open(window.appSettings.mapsUrl, '_blank'); };
 
     </script>

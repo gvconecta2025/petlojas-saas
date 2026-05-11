@@ -177,10 +177,10 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        // INCLUSÃO DO SETPERSISTENCE PARA MANTER LOGADO ETERNAMENTE
+        import { getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, query, where, getDocs, onSnapshot, doc, setDoc, addDoc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // CREDENCIAIS V2
         const firebaseConfig = {
             apiKey: "AIzaSyBcrhhlr6sPRy1wfhCBwyAucnTleQDWPUI",
             authDomain: "petlojas-saas.firebaseapp.com",
@@ -192,6 +192,10 @@
 
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
+        
+        // A SUPER COLA: Obriga o navegador a gravar o login no disco
+        setPersistence(auth, browserLocalPersistence).catch(console.error);
+
         const db = getFirestore(app);
 
         window.myStoreId = null;
@@ -203,7 +207,6 @@
 
         onAuthStateChanged(auth, async (user) => {
             if (user) {
-                // RBAC
                 const q = query(collection(db, 'stores'), where('ownerEmail', '==', user.email));
                 const snap = await getDocs(q);
                 if (snap.empty) { alert("Acesso Negado: Sem loja vinculada."); await signOut(auth); return; }
@@ -257,7 +260,6 @@
             document.getElementById('tab-btn-'+t).className = "px-4 py-3 text-sm font-black text-teal-700 border-b-2 border-teal-700 whitespace-nowrap";
         };
 
-        // SETTINGS
         window.saveSettings = async () => {
             try {
                 await setDoc(doc(db, 'stores', window.myStoreId, 'settings', 'general'), {
@@ -272,9 +274,8 @@
             } catch(e) { alert("Erro: " + e.message); }
         };
 
-        window.getDriveImageUrl = (url) => { if(!url) return ""; const m = url.match(/\/d\/([a-zA-Z0-9_-]+)/) || url.match(/id=([a-zA-Z0-9_-]+)/); return m ? `https://lh3.googleusercontent.com/d/$${m[1]}` : url; };
+        window.getDriveImageUrl = (url) => { if(!url) return ""; const m = url.match(/\/d\/([a-zA-Z0-9_-]+)/) || url.match(/id=([a-zA-Z0-9_-]+)/); return m ? `https://drive.google.com/uc?export=view&id=${m[1]}` : url; };
 
-        // ITEMS
         window.renderItems = () => {
             const q = document.getElementById('adminSearchInput').value.toLowerCase();
             const list = document.getElementById('items-list');
@@ -354,7 +355,6 @@
             }
         };
 
-        // GROUPS
         window.renderGroups = () => {
             document.getElementById('groups-list').innerHTML = window.appGroups.map(g => `
                 <div class="flex items-center gap-3 p-3 bg-white border border-gray-200 rounded-xl shadow-sm cursor-pointer" onclick="window.editGroup('${g.id}')">

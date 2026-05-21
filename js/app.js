@@ -2,7 +2,6 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebas
 import { getAuth, signInAnonymously, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { getFirestore, collection, onSnapshot, doc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-// 1. CONFIGURAÇÃO DO FIREBASE
 const firebaseConfig = {
     apiKey: "AIzaSyBcrhhlr6sPRy1wfhCBwyAucnTleQDWPUI",
     authDomain: "petlojas-saas.firebaseapp.com",
@@ -18,7 +17,6 @@ const db = getFirestore(app);
 
 setPersistence(auth, browserLocalPersistence).catch(console.error);
 
-// 2. VARIÁVEIS GLOBAIS DE ESTADO
 window.currentStoreId = null;
 window.appItems = [];
 window.appGroups = [];
@@ -30,35 +28,24 @@ let currentCatalogType = 'product';
 let currentSearchQuery = '';
 let currentHistory = ['home'];
 
-// 3. SISTEMA KILL-SWITCH DE CACHE E ATUALIZAÇÃO FORÇADA
 window.forceUpdate = async () => {
-    const btnIcon = document.querySelector('#btn-update i') || document.querySelector('[data-lucide="refresh-cw"]');
-    if(btnIcon) btnIcon.classList.add('animate-spin');
-    
     try {
         if ('serviceWorker' in navigator) {
             const registrations = await navigator.serviceWorker.getRegistrations();
-            for (let registration of registrations) {
-                await registration.unregister();
-            }
+            for (let registration of registrations) await registration.unregister();
         }
         if ('caches' in window) {
             const cacheNames = await caches.keys();
             await Promise.all(cacheNames.map(cache => caches.delete(cache)));
         }
     } catch(e) { console.error("Erro ao limpar caches:", e); }
-    
-    setTimeout(() => {
-        window.location.reload(true);
-    }, 500);
+    setTimeout(() => { window.location.reload(true); }, 500);
 };
 
-// 4. RESOLUÇÃO DE TENANT (Saber se é Marketplace ou Loja)
 async function resolveTenant() {
     const urlParams = new URLSearchParams(window.location.search);
     const host = window.location.hostname;
     if (urlParams.has('loja')) return urlParams.get('loja');
-    
     if (host !== 'localhost' && host !== '127.0.0.1' && host !== 'petlojas-saas.vercel.app') {
         try {
             const domainDoc = await getDoc(doc(db, 'domain_mapping', host.replace(/\./g, '_')));
@@ -68,7 +55,6 @@ async function resolveTenant() {
     return null;
 }
 
-// 5. INICIALIZAÇÃO DO SISTEMA
 window.onload = async () => {
     if (window.lucide) window.lucide.createIcons();
     window.currentStoreId = await resolveTenant();
@@ -79,7 +65,6 @@ window.onload = async () => {
         document.getElementById('page-title').innerText = "PetLojas - Marketplace Central";
         document.getElementById('marketplace-root').classList.remove('hidden');
         
-        // 1. Puxar Configurações Visuais do Painel Master
         onSnapshot(doc(db, 'system', 'marketplace'), (docSnap) => {
             if(docSnap.exists()) {
                 const data = docSnap.data();
@@ -93,29 +78,25 @@ window.onload = async () => {
             }
         });
 
-        // 2. Lógica do Botão Flutuante de Instalação (PWA)
         let deferredPrompt;
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             deferredPrompt = e;
             const installBtn = document.getElementById('mkt-install-btn');
-            if(installBtn) installBtn.classList.remove('hidden'); // Exibe o botão flutuante se o celular permitir
+            if(installBtn) installBtn.classList.remove('hidden');
         });
 
         window.installMarketplaceApp = async () => {
             if (deferredPrompt) {
                 deferredPrompt.prompt();
                 const { outcome } = await deferredPrompt.userChoice;
-                if (outcome === 'accepted') {
-                    document.getElementById('mkt-install-btn').classList.add('hidden');
-                }
+                if (outcome === 'accepted') document.getElementById('mkt-install-btn').classList.add('hidden');
                 deferredPrompt = null;
             } else {
                 alert("O seu navegador não suporta instalação direta ou o App já está instalado.");
             }
         };
         
-        // 3. Puxar as Lojas
         onSnapshot(collection(db, 'stores'), (snapshot) => {
             const grid = document.getElementById('marketplace-stores-grid');
             let html = '';
@@ -128,7 +109,7 @@ window.onload = async () => {
                         <div class="w-12 h-12 bg-teal-600/10 text-teal-700 font-black flex items-center justify-center rounded-xl border border-teal-100 uppercase">${id.substring(0,2)}</div>
                         <div>
                             <h3 class="font-black text-gray-800 text-lg uppercase tracking-wide">${id.replace(/_/g, ' ')}</h3>
-                            <p class="text-xs text-slate-400">Parceiro PetLojas Oficial</p>
+                            <p class="text-xs text-slate-400">Parceiro Oficial</p>
                         </div>
                     </div>
                     <div class="mt-6 pt-4 border-t border-gray-50 flex gap-2">
@@ -136,7 +117,7 @@ window.onload = async () => {
                     </div>
                 </div>`;
             });
-            if (grid) grid.innerHTML = html || '<p class="text-gray-400 text-sm">Nenhum parceiro ativo no momento.</p>';
+            if (grid) grid.innerHTML = html || '<p class="text-gray-400 text-sm">Nenhum parceiro ativo.</p>';
             if (window.lucide) window.lucide.createIcons();
             
             document.getElementById('loader').classList.add('opacity-0');
@@ -144,9 +125,9 @@ window.onload = async () => {
         });
 
     } else {
-        // --- MODO WHITELABEL (LOJA INDIVIDUAL) ---
+        // --- MODO WHITELABEL LOJA ---
         document.getElementById('store-root').classList.remove('hidden');
-        document.getElementById('loader-text').innerText = "A iniciar loja whitelabel...";
+        document.getElementById('loader-text').innerText = "A iniciar loja...";
 
         onSnapshot(doc(db, 'stores', window.currentStoreId, 'settings', 'general'), (docSnap) => {
             if(docSnap.exists()) {
@@ -167,21 +148,6 @@ window.onload = async () => {
                     splash.classList.remove('hidden');
                     document.getElementById('dynamic-favicon').href = data.logoUrl;
                     document.getElementById('dynamic-apple-icon').href = data.logoUrl;
-
-                    const dynamicManifest = {
-                        name: data.storeName || "Loja",
-                        short_name: data.storeName || "Loja",
-                        start_url: window.location.search || "/",
-                        display: "standalone",
-                        background_color: "#f8fafc",
-                        theme_color: data.primaryColor || "#0f766e",
-                        icons: [
-                            { src: data.logoUrl, sizes: "192x192", type: "image/png", purpose: "any maskable" },
-                            { src: data.logoUrl, sizes: "512x512", type: "image/png", purpose: "any maskable" }
-                        ]
-                    };
-                    const blob = new Blob([JSON.stringify(dynamicManifest)], { type: 'application/json' });
-                    document.getElementById('dynamic-manifest').href = URL.createObjectURL(blob);
                 }
             }
             document.getElementById('loader').classList.add('opacity-0');
@@ -209,7 +175,6 @@ window.onload = async () => {
     }
 };
 
-// 6. FUNÇÕES UTILITÁRIAS
 window.getDriveImageUrl = (url) => { 
     if (!url) return ""; 
     const match = url.match(/\/d\/([a-zA-Z0-9_-]+)/) || url.match(/id=([a-zA-Z0-9_-]+)/); 
@@ -223,7 +188,6 @@ window.getYoutubeId = (url) => {
 window.parseCurrency = (str) => { if(!str) return 0; return parseFloat(String(str).replace(/[^\d,.-]/g, '').replace(/\./g, '').replace(',', '.')); };
 window.formatCurrency = (num) => num.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
-// 7. NAVEGAÇÃO
 window.showView = (view, type = null) => {
     ['home-view', 'catalog-view', 'detail-view', 'alerts-view', 'cart-view'].forEach(id => document.getElementById(id).classList.add('hidden'));
     if(view !== 'detail' && view !== 'cart') { document.getElementById('searchInput').value = ''; currentSearchQuery = ''; }
@@ -255,7 +219,6 @@ window.handleSearch = (e) => {
 
 window.filterByTag = (tag) => { document.getElementById('searchInput').value = tag; currentSearchQuery = tag.toLowerCase(); window.renderCatalog(); };
 
-// 8. RENDERIZAÇÃO DA UI (Whitelabel)
 const buildCarouselHtml = (item, idPrefix) => {
     const ytId = window.getYoutubeId(item.youtubeUrl);
     const images = item.images && item.images.length > 0 ? item.images : (item.image ? [item.image] : []);
@@ -283,7 +246,7 @@ const buildCarouselHtml = (item, idPrefix) => {
 window.renderFeed = () => {
     const container = document.getElementById('feed-container');
     const items = window.appItems.filter(i => i.vitrine);
-    if(items.length === 0) { container.innerHTML = `<p class="text-center py-10 text-gray-400">Nenhum destaque no momento.</p>`; return; }
+    if(items.length === 0) { container.innerHTML = `<p class="text-center py-10 text-gray-400">Nenhum destaque.</p>`; return; }
     container.innerHTML = items.map(item => `
         <div onclick="window.openDetail('${item.id}')" class="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden cursor-pointer group">
             ${buildCarouselHtml(item, 'feed')}
@@ -317,7 +280,7 @@ window.openDetail = (id) => {
             <h1 class="text-2xl font-black text-gray-800 mb-2">${item.title}</h1>
             <p class="text-3xl font-black text-primaria mb-6">${item.price}</p>
             <p class="text-gray-600 mb-8 whitespace-pre-wrap">${item.description || ''}</p>
-            <button onclick="window.addToCart('${item.id}')" class="w-full bg-primaria text-white py-4 rounded-2xl font-black uppercase shadow-md">Adicionar ao Carrinho</button>
+            <button onclick="window.addToCart('${item.id}')" class="w-full bg-primaria text-white py-4 rounded-2xl font-black uppercase shadow-md">Adicionar</button>
         </div>`;
     if (window.lucide) window.lucide.createIcons();
 };
@@ -334,13 +297,12 @@ window.renderAlerts = () => {
     if (window.lucide) window.lucide.createIcons();
 };
 
-// 9. CARRINHO E CHECKOUT
 window.addToCart = (id) => {
     const item = window.appItems.find(x => x.id === id); if(!item) return;
     const existing = window.cart.find(x => x.id === id);
     if(existing) existing.quantity += 1; else window.cart.push({ ...item, quantity: 1 });
     window.updateCartUI();
-    window.showSystemMessage("Adicionado!", `${item.title} está no seu carrinho.`, "success");
+    window.showSystemMessage("Adicionado!", `${item.title} no carrinho.`, "success");
 };
 
 window.updateCartUI = () => {
@@ -376,13 +338,12 @@ window.updateCartUI = () => {
 window.changeQty = (id, d) => { const i = window.cart.find(x => x.id === id); if(i) { i.quantity += d; if(i.quantity <= 0) window.cart = window.cart.filter(x => x.id !== id); window.updateCartUI(); } };
 
 window.checkoutWhatsApp = () => {
-    let text = "Olá! Gostaria de fazer o seguinte pedido:%0A%0A";
+    let text = "Olá! Pedido:%0A%0A";
     window.cart.forEach(i => text += `🐾 ${i.quantity}x ${i.title}%0A`);
-    text += `%0A*Total: ${document.getElementById('cart-total').innerText}*%0AQual o procedimento?`;
+    text += `%0A*Total: ${document.getElementById('cart-total').innerText}*%0AComo procedo?`;
     window.open(`https://wa.me/${window.appSettings.whatsapp.replace(/\D/g, '')}?text=${text}`, '_blank');
 };
 
-// 10. INTERAÇÕES E MODAIS
 window.showSystemMessage = (title, text, type) => {
     const m = document.getElementById('msg-modal');
     document.getElementById('msg-title').innerText = title;
@@ -402,5 +363,5 @@ window.updateCarouselDots = (id) => {
     const idx = Math.round(c.scrollLeft / c.clientWidth);
     Array.from(dots.children).forEach((dot, i) => dot.className = i === idx ? 'w-2 h-2 rounded-full bg-white' : 'w-2 h-2 rounded-full bg-white/50');
 };
-window.shareApp = () => { window.open(`https://wa.me/?text=Conheça a nossa loja: ${window.location.href}`, '_blank'); };
+window.shareApp = () => { window.open(`https://wa.me/?text=Visite a nossa loja: ${window.location.href}`, '_blank'); };
 window.openLocation = () => { if(window.appSettings.mapsUrl) window.open(window.appSettings.mapsUrl, '_blank'); };

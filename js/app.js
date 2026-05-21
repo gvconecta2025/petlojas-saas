@@ -79,6 +79,43 @@ window.onload = async () => {
         document.getElementById('page-title').innerText = "PetLojas - Marketplace Central";
         document.getElementById('marketplace-root').classList.remove('hidden');
         
+        // 1. Puxar Configurações Visuais do Painel Master
+        onSnapshot(doc(db, 'system', 'marketplace'), (docSnap) => {
+            if(docSnap.exists()) {
+                const data = docSnap.data();
+                if(data.cityName) document.getElementById('mkt-city-name').innerText = data.cityName;
+                if(data.logoUrl) {
+                    document.getElementById('mkt-logo-container').innerHTML = `<img src="${window.getDriveImageUrl(data.logoUrl)}" class="w-full h-full object-cover">`;
+                    document.getElementById('mkt-logo-container').classList.remove('bg-teal-600');
+                    document.getElementById('dynamic-favicon').href = data.logoUrl;
+                    document.getElementById('dynamic-apple-icon').href = data.logoUrl;
+                }
+            }
+        });
+
+        // 2. Lógica do Botão Flutuante de Instalação (PWA)
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            const installBtn = document.getElementById('mkt-install-btn');
+            if(installBtn) installBtn.classList.remove('hidden'); // Exibe o botão flutuante se o celular permitir
+        });
+
+        window.installMarketplaceApp = async () => {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                if (outcome === 'accepted') {
+                    document.getElementById('mkt-install-btn').classList.add('hidden');
+                }
+                deferredPrompt = null;
+            } else {
+                alert("O seu navegador não suporta instalação direta ou o App já está instalado.");
+            }
+        };
+        
+        // 3. Puxar as Lojas
         onSnapshot(collection(db, 'stores'), (snapshot) => {
             const grid = document.getElementById('marketplace-stores-grid');
             let html = '';
@@ -99,7 +136,7 @@ window.onload = async () => {
                     </div>
                 </div>`;
             });
-            grid.innerHTML = html || '<p class="text-gray-400 text-sm">Nenhum parceiro ativo no momento.</p>';
+            if (grid) grid.innerHTML = html || '<p class="text-gray-400 text-sm">Nenhum parceiro ativo no momento.</p>';
             if (window.lucide) window.lucide.createIcons();
             
             document.getElementById('loader').classList.add('opacity-0');

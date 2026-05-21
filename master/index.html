@@ -111,7 +111,8 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, onSnapshot, doc, setDoc, deleteDoc, getCountFromServer, query, collectionGroup } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        // REMOVIDA A NECESSIDADE DE COLLECTIONGROUP E ADICIONADO O GETDOCS
+        import { getFirestore, collection, onSnapshot, doc, setDoc, deleteDoc, getCountFromServer, query, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyBcrhhlr6sPRy1wfhCBwyAucnTleQDWPUI",
@@ -135,7 +136,6 @@
         window.loginMaster = async () => { try { await signInWithPopup(auth, new GoogleAuthProvider()); } catch(e) { alert(e.message); } };
         window.logoutMaster = async () => { await signOut(auth); window.location.reload(); };
 
-        // MECANISMO DE ATUALIZAÇÃO FORÇADA DE CACHE (ANTI-RETENÇÃO DE MODELOS ANTIGOS)
         window.forceUpdateMaster = async () => {
             if (confirm("Deseja forçar a atualização completa de cache e sincronizar os arquivos atuais do GitHub/Vercel?")) {
                 localStorage.clear();
@@ -170,18 +170,28 @@
             }
         });
 
+        // NOVA LÓGICA DE CONTAGEM: 100% Automática e sem precisar de índices no Firebase
         async function loadGlobalStats() {
             try {
+                // Conta Lojas
                 const storesSnap = await getCountFromServer(collection(db, 'stores'));
                 document.getElementById('stat-stores').innerText = storesSnap.data().count;
 
+                // Conta Domínios
                 const domainsSnap = await getCountFromServer(collection(db, 'domain_mapping'));
                 document.getElementById('stat-domains').innerText = domainsSnap.data().count;
 
-                const itemsSnap = await getCountFromServer(query(collectionGroup(db, 'items')));
-                document.getElementById('stat-items').innerText = itemsSnap.data().count;
+                // Conta Produtos (Varre cada loja ativamente)
+                let totalItemsCount = 0;
+                const storesList = await getDocs(collection(db, 'stores'));
+                for (const store of storesList.docs) {
+                    const itemsOfStore = await getCountFromServer(collection(db, 'stores', store.id, 'items'));
+                    totalItemsCount += itemsOfStore.data().count;
+                }
+                document.getElementById('stat-items').innerText = totalItemsCount;
+
             } catch (err) {
-                console.error("Erro na contagem global. Certifique-se de criar o índice de Collection Group para a coleção 'items' no console do Firebase.", err);
+                console.error("Erro na atualização de métricas: ", err);
             }
         }
 
@@ -190,6 +200,7 @@
                 window.appStores = [];
                 snap.forEach(d => window.appStores.push({ id: d.id, ...d.data() }));
                 renderStores();
+                loadGlobalStats(); // Atualiza a contagem global sempre que houver alteração nas lojas
             });
         }
 

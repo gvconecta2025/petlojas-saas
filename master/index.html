@@ -35,7 +35,7 @@
             </div>
             <div class="flex items-center gap-6">
                 <button onclick="window.forceUpdateMaster()" class="bg-amber-600 hover:bg-amber-500 text-white font-bold py-2 px-4 rounded-xl text-xs flex items-center gap-2 transition-all shadow-md active:scale-95">
-                    <i data-lucide="refresh-cw" class="w-4 h-4"></i> ATUALIZAR
+                    <i data-lucide="refresh-cw" class="w-4 h-4"></i> VERIFICAR ATUALIZAÇÕES
                 </button>
                 <div class="text-right hidden md:block">
                     <p id="admin-email" class="text-xs font-bold text-slate-400"></p>
@@ -48,168 +48,164 @@
         </header>
 
         <main class="flex-grow overflow-y-auto p-8 space-y-8 max-w-7xl mx-auto w-full">
+            
             <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
-                <div class="glass p-6 rounded-3xl"><p class="text-slate-400 text-xs font-black uppercase mb-1">Lojas Ativas</p><h3 id="stat-stores" class="text-4xl font-black text-white">0</h3></div>
-                <div class="glass p-6 rounded-3xl"><p class="text-slate-400 text-xs font-black uppercase mb-1">Domínios</p><h3 id="stat-domains" class="text-4xl font-black text-emerald-500">0</h3></div>
-                <div class="glass p-6 rounded-3xl"><p class="text-slate-400 text-xs font-black uppercase mb-1">Total Produtos</p><h3 id="stat-items" class="text-4xl font-black text-blue-500">0</h3></div>
-                <div class="glass p-6 rounded-3xl border-blue-500/30 bg-blue-500/5"><p class="text-blue-400 text-xs font-black uppercase mb-1">Status</p><h3 class="text-xl font-black text-white">OPERACIONAL</h3></div>
+                <div class="glass p-6 rounded-3xl">
+                    <p class="text-slate-400 text-xs font-black uppercase tracking-widest mb-1">Lojas Ativas</p>
+                    <h3 id="stat-stores" class="text-4xl font-black text-white">0</h3>
+                </div>
+                <div class="glass p-6 rounded-3xl">
+                    <p class="text-slate-400 text-xs font-black uppercase tracking-widest mb-1">Domínios Mapeados</p>
+                    <h3 id="stat-domains" class="text-4xl font-black text-emerald-500">0</h3>
+                </div>
+                <div class="glass p-6 rounded-3xl">
+                    <p class="text-slate-400 text-xs font-black uppercase tracking-widest mb-1">Total Produtos</p>
+                    <h3 id="stat-items" class="text-4xl font-black text-blue-500">0</h3>
+                </div>
+                <div class="glass p-6 rounded-3xl border-blue-500/30 bg-blue-500/5">
+                    <p class="text-blue-400 text-xs font-black uppercase tracking-widest mb-1">Status Sistema</p>
+                    <h3 class="text-xl font-black text-white flex items-center gap-2">OPERACIONAL <div class="w-3 h-3 bg-emerald-500 rounded-full animate-pulse"></div></h3>
+                </div>
             </div>
 
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                
                 <div class="lg:col-span-1 space-y-6">
                     <div class="glass p-6 rounded-3xl">
                         <h3 class="font-black text-lg mb-6 flex items-center gap-2"><i data-lucide="layout-template" class="text-purple-500"></i> Marketplace Central</h3>
-                        <input type="text" id="mkt-logo" placeholder="URL da Logo" class="w-full bg-slate-950 border border-slate-700 rounded-2xl px-4 py-3 text-sm mb-4">
-                        <input type="text" id="mkt-city" placeholder="Nome da Cidade (Abaixo do Logo)" class="w-full bg-slate-950 border border-slate-700 rounded-2xl px-4 py-3 text-sm mb-4">
-                        <button onclick="window.saveMarketplaceSettings()" class="w-full bg-purple-600 py-3 rounded-2xl font-black text-sm hover:bg-purple-500 transition-all">SALVAR CONFIGURAÇÕES</button>
+                        <div class="space-y-4">
+                            <input type="text" id="mkt-logo" placeholder="URL do Logo (ex: https://...)" class="w-full bg-slate-950 border border-slate-700 rounded-2xl px-4 py-3 text-sm outline-none focus:border-purple-500">
+                            <input type="text" id="mkt-city" placeholder="Nome da Cidade (ex: Governador Valadares)" class="w-full bg-slate-950 border border-slate-700 rounded-2xl px-4 py-3 text-sm outline-none focus:border-purple-500">
+                            <button onclick="window.saveMarketplaceSettings()" class="w-full bg-purple-600 py-3 rounded-2xl font-black text-sm shadow-lg shadow-purple-600/20 hover:bg-purple-500 transition-all">SALVAR CONFIGURAÇÕES</button>
+                        </div>
                     </div>
 
                     <div class="glass p-6 rounded-3xl">
                         <h3 class="font-black text-lg mb-6 flex items-center gap-2"><i data-lucide="plus-circle" class="text-blue-500"></i> Nova Loja</h3>
-                        <input type="text" id="new-id" placeholder="ID da Loja" class="w-full bg-slate-950 border border-slate-700 rounded-2xl px-4 py-3 text-sm mb-4">
-                        <input type="email" id="new-email" placeholder="E-mail" class="w-full bg-slate-950 border border-slate-700 rounded-2xl px-4 py-3 text-sm mb-4">
-                        <input type="text" id="new-name" placeholder="Nome Comercial" class="w-full bg-slate-950 border border-slate-700 rounded-2xl px-4 py-3 text-sm mb-4">
-                        <button onclick="window.createStore()" class="w-full bg-blue-600 py-3 rounded-2xl font-black text-sm hover:bg-blue-500 transition-all">PROVISIONAR</button>
+                        <div class="space-y-4">
+                            <input type="text" id="new-id" placeholder="ID da Loja (ex: amigopet)" class="w-full bg-slate-950 border border-slate-700 rounded-2xl px-4 py-3 text-sm outline-none focus:border-blue-500">
+                            <input type="email" id="new-email" placeholder="E-mail do Lojista" class="w-full bg-slate-950 border border-slate-700 rounded-2xl px-4 py-3 text-sm outline-none focus:border-blue-500">
+                            <input type="text" id="new-name" placeholder="Nome Comercial" class="w-full bg-slate-950 border border-slate-700 rounded-2xl px-4 py-3 text-sm outline-none focus:border-blue-500">
+                            <button onclick="window.createStore()" class="w-full bg-blue-600 py-3 rounded-2xl font-black text-sm shadow-lg shadow-blue-600/20 hover:bg-blue-500 transition-all">PROVISIONAR</button>
+                        </div>
                     </div>
 
                     <div class="glass p-6 rounded-3xl">
                         <h3 class="font-black text-lg mb-6 flex items-center gap-2"><i data-lucide="globe" class="text-emerald-500"></i> Roteamento DNS</h3>
-                        <input type="text" id="dom-url" placeholder="dominio.com.br" class="w-full bg-slate-950 border border-slate-700 rounded-2xl px-4 py-3 text-sm mb-4">
-                        <input type="text" id="dom-target" placeholder="ID da Loja Alvo" class="w-full bg-slate-950 border border-slate-700 rounded-2xl px-4 py-3 text-sm mb-4">
-                        <button onclick="window.mapDomain()" class="w-full bg-emerald-600 py-3 rounded-2xl font-black text-sm hover:bg-emerald-500 transition-all">CRIAR ROTA</button>
+                        <div class="space-y-4">
+                            <input type="text" id="dom-url" placeholder="dominio.com.br" class="w-full bg-slate-950 border border-slate-700 rounded-2xl px-4 py-3 text-sm outline-none focus:border-emerald-500">
+                            <input type="text" id="dom-target" placeholder="ID da Loja Alvo" class="w-full bg-slate-950 border border-slate-700 rounded-2xl px-4 py-3 text-sm outline-none focus:border-emerald-500">
+                            <button onclick="window.mapDomain()" class="w-full bg-emerald-600 py-3 rounded-2xl font-black text-sm shadow-lg shadow-emerald-600/20 hover:bg-emerald-500 transition-all">CRIAR ROTA</button>
+                        </div>
                     </div>
                 </div>
 
-                <div class="lg:col-span-2 glass p-6 rounded-3xl min-h-[500px]">
-                    <div class="flex justify-between items-center mb-6">
-                        <h3 class="font-black text-lg">Inquilinos na Infraestrutura</h3>
-                        <input type="text" id="searchStores" onkeyup="window.renderStores()" placeholder="Filtrar lojas..." class="bg-slate-950 border border-slate-700 rounded-xl px-4 py-2 text-xs outline-none focus:border-blue-500">
+                <div class="lg:col-span-2 space-y-6">
+                    <div class="glass p-6 rounded-3xl min-h-[500px]">
+                        <div class="flex justify-between items-center mb-6">
+                            <h3 class="font-black text-lg">Inquilinos na Infraestrutura</h3>
+                            <div class="relative">
+                                <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500"></i>
+                                <input type="text" id="searchStores" onkeyup="window.renderStores()" placeholder="Filtrar lojas..." class="bg-slate-950 border border-slate-700 rounded-xl pl-9 pr-4 py-2 text-xs outline-none focus:border-blue-500">
+                            </div>
+                        </div>
+                        <div id="stores-list" class="space-y-3"></div>
                     </div>
-                    <div id="stores-list" class="space-y-3"></div>
                 </div>
+
             </div>
         </main>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, setPersistence, browserLocalPersistence, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, onSnapshot, doc, setDoc, getDoc, updateDoc, getCountFromServer, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, onSnapshot, doc, setDoc, getDoc, deleteDoc, getCountFromServer, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        const app = initializeApp({
+        const firebaseConfig = {
             apiKey: "AIzaSyBcrhhlr6sPRy1wfhCBwyAucnTleQDWPUI",
             authDomain: "petlojas-saas.firebaseapp.com",
             projectId: "petlojas-saas",
             storageBucket: "petlojas-saas.firebasestorage.app",
             messagingSenderId: "699445164987",
             appId: "1:699445164987:web:908f92216c5fee00aea29e"
-        });
-
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-        setPersistence(auth, browserLocalPersistence);
-
-        const MASTER_EMAILS = ["professoragiselle.edu2@gmail.com", "gvconecta2025@gmail.com"];
-
-        window.loginMaster = async () => { 
-            const provider = new GoogleAuthProvider();
-            provider.setCustomParameters({ prompt: 'select_account' });
-            await signInWithPopup(auth, provider); 
         };
 
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        setPersistence(auth, browserLocalPersistence).catch(console.error);
+
+        const db = getFirestore(app);
+        const MASTER_EMAIL = "professoragiselle.edu2@gmail.com";
+
+        window.appStores = [];
+
+        window.loginMaster = async () => { try { await signInWithPopup(auth, new GoogleAuthProvider()); } catch(e) { alert(e.message); } };
         window.logoutMaster = async () => { await signOut(auth); window.location.reload(); };
 
+        window.forceUpdateMaster = async () => {
+            if (confirm("Deseja forçar a atualização completa de cache e sincronizar os arquivos atuais do GitHub/Vercel?")) {
+                localStorage.clear(); sessionStorage.clear();
+                if ('serviceWorker' in navigator) {
+                    const registrations = await navigator.serviceWorker.getRegistrations();
+                    for (let registration of registrations) await registration.unregister();
+                }
+                const cacheNames = await caches.keys();
+                for (let cacheName of cacheNames) await caches.delete(cacheName);
+                alert("Cache destruído com sucesso! Recarregando aplicação limpa...");
+                window.location.reload(true);
+            }
+        };
+
         onAuthStateChanged(auth, (user) => {
-            if (user && !user.isAnonymous && MASTER_EMAILS.includes(user.email)) {
+            if (user && user.email === MASTER_EMAIL) {
                 document.getElementById('login-screen').classList.add('hidden');
                 document.getElementById('master-dashboard').classList.remove('hidden');
                 document.getElementById('master-dashboard').classList.add('flex');
                 document.getElementById('admin-email').innerText = user.email;
-                if(window.lucide) lucide.createIcons();
-                loadAll();
+                lucide.createIcons();
+                loadGlobalStats(); loadStores(); loadDomains(); loadMarketplaceSettings();
             } else if (user) {
-                // Caso não autorizado, força saída
-                signOut(auth);
+                alert("Acesso Negado."); signOut(auth);
             }
         });
 
-        window.copyToClipboard = (text) => { 
-            navigator.clipboard.writeText(text); 
-            alert("Link copiado!"); 
-        };
-
-        window.toggleStoreStatus = async (id, currentStatus) => {
-            await updateDoc(doc(db, 'stores', id), { status: currentStatus === 'paused' ? 'active' : 'paused' });
-        };
-
-        window.saveMarketplaceSettings = async () => {
-            const logoUrl = document.getElementById('mkt-logo').value;
-            const cityName = document.getElementById('mkt-city').value;
-            await setDoc(doc(db, 'system', 'marketplace'), { logoUrl, cityName }, { merge: true });
-            alert("Configurações salvas!");
-        };
-
-        window.createStore = async () => {
-            const id = document.getElementById('new-id').value.trim().toLowerCase();
-            const email = document.getElementById('new-email').value.trim().toLowerCase();
-            const name = document.getElementById('new-name').value.trim();
-            if(!id || !email || !name) return alert("Dados incompletos.");
-            await setDoc(doc(db, 'stores', id), { ownerEmail: email, createdAt: Date.now(), status: 'active' });
-            await setDoc(doc(db, 'stores', id, 'settings', 'general'), { storeName: name, primaryColor: "#0f766e" });
-            alert("Loja criada!");
-        };
-
-        window.mapDomain = async () => {
-            const url = document.getElementById('dom-url').value.trim().toLowerCase().replace(/^https?:\/\//, '');
-            const target = document.getElementById('dom-target').value.trim().toLowerCase();
-            if(!url || !target) return alert("Dados incompletos.");
-            await setDoc(doc(db, 'domain_mapping', url.replace(/\./g, '_')), { domain: url, storeId: target });
-            alert("Rota criada!");
-        };
-
-        async function loadAll() {
-            onSnapshot(doc(db, 'system', 'marketplace'), (d) => {
-                if(d.exists()){
-                    document.getElementById('mkt-logo').value = d.data().logoUrl || '';
-                    document.getElementById('mkt-city').value = d.data().cityName || '';
+        // ==========================================
+        // NOVAS FUNÇÕES: GESTÃO DO MARKETPLACE CENTRAL
+        // ==========================================
+        async function loadMarketplaceSettings() {
+            try {
+                const docSnap = await getDoc(doc(db, 'system', 'marketplace'));
+                if(docSnap.exists()){
+                    document.getElementById('mkt-logo').value = docSnap.data().logoUrl || '';
+                    document.getElementById('mkt-city').value = docSnap.data().cityName || '';
                 }
-            });
-
-            onSnapshot(collection(db, 'stores'), (snap) => {
-                const list = document.getElementById('stores-list');
-                list.innerHTML = '';
-                snap.forEach(d => {
-                    const s = d.data();
-                    const status = s.status || 'active';
-                    const appUrl = `https://petlojas-saas.vercel.app/?loja=${d.id}`;
-                    const painelUrl = `https://petlojas-saas.vercel.app/painel/index.html?loja=${d.id}`;
-                    list.innerHTML += `
-                    <div class="glass p-4 rounded-xl flex flex-col gap-2">
-                        <div class="flex justify-between items-center">
-                            <div>
-                                <p class="font-bold text-white">${d.id}</p>
-                                <p class="text-[10px] ${status === 'active' ? 'text-emerald-500' : 'text-amber-500'} font-black uppercase">${status}</p>
-                            </div>
-                            <button onclick="window.deleteStore('${d.id}')" class="p-1 text-red-500 hover:bg-red-900/20 rounded"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
-                        </div>
-                        <div class="flex flex-wrap gap-2 text-xs">
-                            <button onclick="window.copyToClipboard('${appUrl}')" class="px-3 py-1.5 bg-slate-800 rounded-lg flex items-center gap-1"><i data-lucide="copy" class="w-3 h-3"></i> App</button>
-                            <button onclick="window.copyToClipboard('${painelUrl}')" class="px-3 py-1.5 bg-slate-800 rounded-lg flex items-center gap-1"><i data-lucide="copy" class="w-3 h-3"></i> Painel</button>
-                            <button onclick="window.toggleStoreStatus('${d.id}', '${status}')" class="px-3 py-1.5 ${status === 'paused' ? 'bg-emerald-600' : 'bg-amber-600'} rounded-lg font-bold">
-                                ${status === 'paused' ? 'Ativar' : 'Pausar'}
-                            </button>
-                        </div>
-                    </div>`;
-                });
-                lucide.createIcons();
-            });
-            
-            const storesSnap = await getCountFromServer(collection(db, 'stores'));
-            document.getElementById('stat-stores').innerText = storesSnap.data().count;
+            } catch(e) { console.error("Erro ao carregar configurações do Marketplace:", e); }
         }
 
-        window.deleteStore = async (id) => { if(confirm(`Apagar a loja ${id}?`)) await deleteDoc(doc(db, 'stores', id)); };
-        window.forceUpdateMaster = () => window.location.reload(true);
-    </script>
-</body>
-</html>
+        window.saveMarketplaceSettings = async () => {
+            const logoUrl = document.getElementById('mkt-logo').value.trim();
+            const cityName = document.getElementById('mkt-city').value.trim();
+            try {
+                await setDoc(doc(db, 'system', 'marketplace'), { logoUrl, cityName }, { merge: true });
+                alert("Configurações do Marketplace salvas com sucesso!");
+            } catch(e) { alert(e.message); }
+        };
+        // ==========================================
+
+        async function loadGlobalStats() {
+            try {
+                const storesSnap = await getCountFromServer(collection(db, 'stores'));
+                document.getElementById('stat-stores').innerText = storesSnap.data().count;
+
+                const domainsSnap = await getCountFromServer(collection(db, 'domain_mapping'));
+                document.getElementById('stat-domains').innerText = domainsSnap.data().count;
+
+                let totalItemsCount = 0;
+                const storesList = await getDocs(collection(db, 'stores'));
+                for (const store of storesList.docs) {
+                    const itemsOfStore = await getCountFromServer(collection(db, 'stores', store.id, 'items'));
+                    totalItemsCount += itemsOfStore.data().count;
+                }
+                document.getElementById('stat-items').innerText = totalItemsCount;
+            } catch (err) { console.error("Erro na atualização de métricas: ", err);

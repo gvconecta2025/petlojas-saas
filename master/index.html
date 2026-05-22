@@ -136,11 +136,26 @@
         setPersistence(auth, browserLocalPersistence).catch(console.error);
 
         const db = getFirestore(app);
-        const MASTER_EMAIL = "professoragiselle.edu2@gmail.com";
+        
+        // E-mails com acesso autorizado ao Core Master
+        const MASTER_EMAILS = [
+            "professoragiselle.edu2@gmail.com", 
+            "gvconecta2025@gmail.com"
+        ];
 
         window.appStores = [];
 
-        window.loginMaster = async () => { try { await signInWithPopup(auth, new GoogleAuthProvider()); } catch(e) { alert(e.message); } };
+        // Forçar o seletor de contas do Google para ignorar o "Fantasma Anónimo"
+        window.loginMaster = async () => { 
+            try { 
+                const provider = new GoogleAuthProvider();
+                provider.setCustomParameters({ prompt: 'select_account' });
+                await signInWithPopup(auth, provider); 
+            } catch(e) { 
+                alert("Erro na autenticação: " + e.message); 
+            } 
+        };
+        
         window.logoutMaster = async () => { await signOut(auth); window.location.reload(); };
 
         window.forceUpdateMaster = async () => {
@@ -152,27 +167,34 @@
                 }
                 const cacheNames = await caches.keys();
                 for (let cacheName of cacheNames) await caches.delete(cacheName);
-                alert("Cache destruído com sucesso! Recarregando aplicação limpa...");
+                alert("Cache destruído com sucesso! A recarregar a aplicação limpa...");
                 window.location.reload(true);
             }
         };
 
-        onAuthStateChanged(auth, (user) => {
-            if (user && user.email === MASTER_EMAIL) {
-                document.getElementById('login-screen').classList.add('hidden');
-                document.getElementById('master-dashboard').classList.remove('hidden');
-                document.getElementById('master-dashboard').classList.add('flex');
-                document.getElementById('admin-email').innerText = user.email;
-                lucide.createIcons();
-                loadGlobalStats(); loadStores(); loadDomains(); loadMarketplaceSettings();
-            } else if (user) {
-                alert("Acesso Negado."); signOut(auth);
+        onAuthStateChanged(auth, async (user) => {
+            // Se for um utilizador anónimo (carrinho do cliente), ignora e fica na página de login
+            if (user && user.isAnonymous) {
+                return;
+            }
+
+            // Se for um login real com Google
+            if (user && !user.isAnonymous) {
+                if (MASTER_EMAILS.includes(user.email)) {
+                    document.getElementById('login-screen').classList.add('hidden');
+                    document.getElementById('master-dashboard').classList.remove('hidden');
+                    document.getElementById('master-dashboard').classList.add('flex');
+                    document.getElementById('admin-email').innerText = user.email;
+                    if(window.lucide) lucide.createIcons();
+                    loadGlobalStats(); loadStores(); loadDomains(); loadMarketplaceSettings();
+                } else {
+                    alert("Acesso Negado: O e-mail " + user.email + " não tem permissões de nível Master."); 
+                    await signOut(auth);
+                    window.location.reload();
+                }
             }
         });
 
-        // ==========================================
-        // NOVAS FUNÇÕES: GESTÃO DO MARKETPLACE CENTRAL
-        // ==========================================
         async function loadMarketplaceSettings() {
             try {
                 const docSnap = await getDoc(doc(db, 'system', 'marketplace'));
@@ -191,7 +213,6 @@
                 alert("Configurações do Marketplace salvas com sucesso!");
             } catch(e) { alert(e.message); }
         };
-        // ==========================================
 
         async function loadGlobalStats() {
             try {
@@ -208,4 +229,88 @@
                     totalItemsCount += itemsOfStore.data().count;
                 }
                 document.getElementById('stat-items').innerText = totalItemsCount;
-            } catch (err) { console.error("Erro na atualização de métricas: ", err);
+            } catch (err) { console.error("Erro na atualização de métricas: ", err); }
+        }
+
+        function loadStores() {
+            onSnapshot(collection(db, 'stores'), (snap) => {
+                window.appStores = [];
+                snap.forEach(d => window.appStores.push({ id: d.id, ...d.data() }));
+                renderStores(); loadGlobalStats(); 
+            });
+        }
+
+        window.renderStores = () => {
+            const list = document.getElementById('stores-list');
+            const q = document.getElementById('searchStores').value.toLowerCase();
+            
+            list.innerHTML = window.appStores.filter(s => s.id.includes(q) || s.ownerEmail.includes(q)).map(s => {
+                const appUrl = `https://petlojas-saas.vercel.app/?loja=${s.id}`;
+                const painelUrl = `https://petlojas-saas.vercel.app/painel/index.html?loja=${s.id}`;
+
+                return `
+                <div class="glass p-5 rounded-2xl flex flex-col gap-4 border border-slate-800 hover:border-blue-500/30 transition-all">
+                    <div class="flex justify-between items-start gap-4">
+                        <div class="flex items-center gap-4 flex-1">
+                            <div class="w-12 h-12 bg-slate-950 rounded-xl flex items-center justify-center font-black text-blue-500 border border-slate-800 shrink-0">
+                                ${s.id.substring(0,2).toUpperCase()}
+                            </div>
+                            <div class="min-w-0">
+                                <p class="font-black text-white text-base truncate">${s.id}</p>
+                                <p class="text-xs text-slate-500 font-mono truncate">${s.ownerEmail}</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2 shrink-0">
+                            <div class="px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-500 text-[10px] font-black uppercase tracking-wider border border-emerald-500/10">Ativo</div>
+                            <button onclick="window.deleteStore('${s.id}')" class="p-1.5 text-slate-500 hover:text-red-500 transition-colors rounded-lg hover:bg-red-500/10"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2 border-t border-slate-800/60">
+                        <a href="${appUrl}" target="_blank" class="flex items-center gap-2 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-300 hover:text-white hover:border-blue-500/40 transition-all font-semibold">
+                            <i data-lucide="smartphone" class="w-4 h-4 text-blue-400 shrink-0"></i>
+                            <span class="truncate">Ver App do Cliente</span>
+                            <i data-lucide="external-link" class="w-3 h-3 ml-auto text-slate-600 shrink-0"></i>
+                        </a>
+                        <a href="${painelUrl}" target="_blank" class="flex items-center gap-2 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-300 hover:text-white hover:border-teal-500/40 transition-all font-semibold">
+                            <i data-lucide="sliders" class="w-4 h-4 text-teal-400 shrink-0"></i>
+                            <span class="truncate">Abrir Painel Lojista</span>
+                            <i data-lucide="external-link" class="w-3 h-3 ml-auto text-slate-600 shrink-0"></i>
+                        </a>
+                    </div>
+                </div>`;
+            }).join('');
+            if(window.lucide) lucide.createIcons();
+        };
+
+        function loadDomains() {
+            onSnapshot(collection(db, 'domain_mapping'), (snap) => { loadGlobalStats(); });
+        }
+
+        window.createStore = async () => {
+            const id = document.getElementById('new-id').value.trim().toLowerCase();
+            const email = document.getElementById('new-email').value.trim().toLowerCase();
+            const name = document.getElementById('new-name').value.trim();
+            if(!id || !email || !name) return alert("Dados incompletos.");
+            try {
+                await setDoc(doc(db, 'stores', id), { ownerEmail: email, createdAt: Date.now(), status: 'active' });
+                await setDoc(doc(db, 'stores', id, 'settings', 'general'), { storeName: name, primaryColor: "#0f766e" });
+                alert("Loja Provisionada!");
+                document.getElementById('new-id').value = ''; document.getElementById('new-email').value = ''; document.getElementById('new-name').value = '';
+            } catch(e) { alert(e.message); }
+        };
+
+        window.mapDomain = async () => {
+            const url = document.getElementById('dom-url').value.trim().toLowerCase().replace(/^https?:\/\//, '');
+            const target = document.getElementById('dom-target').value.trim().toLowerCase();
+            if(!url || !target) return alert("Dados incompletos.");
+            try {
+                await setDoc(doc(db, 'domain_mapping', url.replace(/\./g, '_')), { domain: url, storeId: target });
+                alert("Rota de Domínio Criada!");
+                document.getElementById('dom-url').value = ''; document.getElementById('dom-target').value = '';
+            } catch(e) { alert(e.message); }
+        };
+
+        window.deleteStore = async (id) => { if(confirm(`Apagar a loja ${id}?\nO cliente perderá o acesso imediato.`)) await deleteDoc(doc(db, 'stores', id)); };
+    </script>
+</body>
+</html>

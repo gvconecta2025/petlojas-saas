@@ -34,6 +34,9 @@
                 <h2 class="font-black text-xl tracking-tighter">MASTER <span class="text-blue-500">DASHBOARD</span></h2>
             </div>
             <div class="flex items-center gap-6">
+                <button onclick="window.forceUpdateMaster()" class="bg-amber-600 hover:bg-amber-500 text-white font-bold py-2 px-4 rounded-xl text-xs flex items-center gap-2 transition-all shadow-md active:scale-95">
+                    <i data-lucide="refresh-cw" class="w-4 h-4"></i> ATUALIZAR
+                </button>
                 <button onclick="window.logoutMaster()" class="bg-slate-800 p-2.5 rounded-xl hover:bg-red-500/20 hover:text-red-500 transition-all">
                     <i data-lucide="log-out" class="w-5 h-5"></i>
                 </button>
@@ -41,20 +44,36 @@
         </header>
 
         <main class="flex-grow overflow-y-auto p-8 space-y-8 max-w-7xl mx-auto w-full">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <div class="glass p-6 rounded-3xl"><p class="text-slate-400 text-xs font-black uppercase mb-1">Lojas Ativas</p><h3 id="stat-stores" class="text-4xl font-black text-white">0</h3></div>
+                <div class="glass p-6 rounded-3xl"><p class="text-slate-400 text-xs font-black uppercase mb-1">Domínios</p><h3 id="stat-domains" class="text-4xl font-black text-emerald-500">0</h3></div>
+                <div class="glass p-6 rounded-3xl"><p class="text-slate-400 text-xs font-black uppercase mb-1">Produtos</p><h3 id="stat-items" class="text-4xl font-black text-blue-500">0</h3></div>
+                <div class="glass p-6 rounded-3xl border-blue-500/30 bg-blue-500/5"><p class="text-blue-400 text-xs font-black uppercase mb-1">Status</p><h3 class="text-xl font-black text-white">OPERACIONAL</h3></div>
+            </div>
+
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 <div class="lg:col-span-1 space-y-6">
                     <div class="glass p-6 rounded-3xl">
                         <h3 class="font-black text-lg mb-6 flex items-center gap-2"><i data-lucide="layout-template" class="text-purple-500"></i> Marketplace Central</h3>
-                        <div class="space-y-4">
-                            <input type="text" id="mkt-logo" placeholder="URL do Logo" class="w-full bg-slate-950 border border-slate-700 rounded-2xl px-4 py-3 text-sm">
-                            <input type="text" id="mkt-city" placeholder="Nome da Cidade" class="w-full bg-slate-950 border border-slate-700 rounded-2xl px-4 py-3 text-sm">
-                            <button onclick="window.saveMarketplaceSettings()" class="w-full bg-purple-600 py-3 rounded-2xl font-black text-sm">SALVAR CONFIGURAÇÕES</button>
-                        </div>
+                        <input type="text" id="mkt-logo" placeholder="URL do Logo" class="w-full bg-slate-950 border border-slate-700 rounded-2xl px-4 py-3 text-sm mb-4">
+                        <input type="text" id="mkt-city" placeholder="Nome da Cidade" class="w-full bg-slate-950 border border-slate-700 rounded-2xl px-4 py-3 text-sm mb-4">
+                        <button onclick="window.saveMarketplaceSettings()" class="w-full bg-purple-600 py-3 rounded-2xl font-black text-sm hover:bg-purple-500">SALVAR CONFIGURAÇÕES</button>
+                    </div>
+
+                    <div class="glass p-6 rounded-3xl">
+                        <h3 class="font-black text-lg mb-6 flex items-center gap-2"><i data-lucide="plus-circle" class="text-blue-500"></i> Nova Loja</h3>
+                        <input type="text" id="new-id" placeholder="ID da Loja" class="w-full bg-slate-950 border border-slate-700 rounded-2xl px-4 py-3 text-sm mb-4">
+                        <input type="email" id="new-email" placeholder="E-mail" class="w-full bg-slate-950 border border-slate-700 rounded-2xl px-4 py-3 text-sm mb-4">
+                        <input type="text" id="new-name" placeholder="Nome Comercial" class="w-full bg-slate-950 border border-slate-700 rounded-2xl px-4 py-3 text-sm mb-4">
+                        <button onclick="window.createStore()" class="w-full bg-blue-600 py-3 rounded-2xl font-black text-sm">PROVISIONAR</button>
                     </div>
                 </div>
 
-                <div class="lg:col-span-2 glass p-6 rounded-3xl">
-                    <h3 class="font-black text-lg mb-6">Lojas na Infraestrutura</h3>
+                <div class="lg:col-span-2 glass p-6 rounded-3xl min-h-[500px]">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="font-black text-lg">Inquilinos</h3>
+                        <input type="text" id="searchStores" onkeyup="window.renderStores()" placeholder="Filtrar lojas..." class="bg-slate-950 border border-slate-700 rounded-xl px-4 py-2 text-xs outline-none">
+                    </div>
                     <div id="stores-list" class="space-y-3"></div>
                 </div>
             </div>
@@ -64,7 +83,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, setPersistence, browserLocalPersistence, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, onSnapshot, doc, setDoc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, collection, onSnapshot, doc, setDoc, getDoc, updateDoc, getCountFromServer, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         const app = initializeApp({
             apiKey: "AIzaSyBcrhhlr6sPRy1wfhCBwyAucnTleQDWPUI",
@@ -79,25 +98,30 @@
         const db = getFirestore(app);
         setPersistence(auth, browserLocalPersistence);
 
-        window.loginMaster = async () => { await signInWithPopup(auth, new GoogleAuthProvider()); };
+        const MASTER_EMAILS = ["professoragiselle.edu2@gmail.com", "gvconecta2025@gmail.com"];
+
+        window.loginMaster = async () => { 
+            const provider = new GoogleAuthProvider();
+            provider.setCustomParameters({ prompt: 'select_account' });
+            await signInWithPopup(auth, provider); 
+        };
+
         window.logoutMaster = async () => { await signOut(auth); window.location.reload(); };
 
         onAuthStateChanged(auth, (user) => {
-            if (user && user.email === "professoragiselle.edu2@gmail.com") {
+            if (user && !user.isAnonymous && MASTER_EMAILS.includes(user.email)) {
                 document.getElementById('login-screen').classList.add('hidden');
                 document.getElementById('master-dashboard').classList.remove('hidden');
                 document.getElementById('master-dashboard').classList.add('flex');
+                document.getElementById('admin-email').innerText = user.email;
                 loadAll();
             }
         });
 
-        window.copyToClipboard = (text) => {
-            navigator.clipboard.writeText(text);
-            alert("Link copiado!");
-        };
+        window.copyToClipboard = (text) => { navigator.clipboard.writeText(text); alert("Link copiado!"); };
 
         window.toggleStoreStatus = async (id, currentStatus) => {
-            await updateDoc(doc(db, 'stores', id), { status: currentStatus === 'active' ? 'paused' : 'active' });
+            await updateDoc(doc(db, 'stores', id), { status: currentStatus === 'paused' ? 'active' : 'paused' });
         };
 
         window.saveMarketplaceSettings = async () => {
@@ -107,30 +131,54 @@
             alert("Salvo!");
         };
 
-        function loadAll() {
+        window.createStore = async () => {
+            const id = document.getElementById('new-id').value.trim().toLowerCase();
+            const email = document.getElementById('new-email').value.trim().toLowerCase();
+            const name = document.getElementById('new-name').value.trim();
+            if(!id || !email || !name) return alert("Dados incompletos.");
+            await setDoc(doc(db, 'stores', id), { ownerEmail: email, createdAt: Date.now(), status: 'active' });
+            await setDoc(doc(db, 'stores', id, 'settings', 'general'), { storeName: name, primaryColor: "#0f766e" });
+            alert("Loja criada!");
+        };
+
+        async function loadAll() {
+            onSnapshot(doc(db, 'system', 'marketplace'), (d) => {
+                if(d.exists()){
+                    document.getElementById('mkt-logo').value = d.data().logoUrl || '';
+                    document.getElementById('mkt-city').value = d.data().cityName || '';
+                }
+            });
+
             onSnapshot(collection(db, 'stores'), (snap) => {
                 const list = document.getElementById('stores-list');
                 list.innerHTML = '';
                 snap.forEach(d => {
                     const s = d.data();
+                    const status = s.status || 'active';
                     const appUrl = `https://petlojas-saas.vercel.app/?loja=${d.id}`;
+                    const painelUrl = `https://petlojas-saas.vercel.app/painel/index.html?loja=${d.id}`;
                     list.innerHTML += `
-                    <div class="glass p-4 rounded-xl flex justify-between items-center">
-                        <div>
-                            <p class="font-bold">${d.id}</p>
-                            <p class="text-xs text-slate-400">${s.status || 'active'}</p>
+                    <div class="glass p-4 rounded-xl flex flex-col gap-2">
+                        <div class="flex justify-between">
+                            <span class="font-bold text-white">${d.id}</span>
+                            <span class="text-[10px] ${status === 'active' ? 'text-emerald-500' : 'text-amber-500'} font-black uppercase">${status}</span>
                         </div>
-                        <div class="flex gap-2">
-                            <button onclick="window.copyToClipboard('${appUrl}')" class="p-2 bg-slate-700 rounded-lg"><i data-lucide="copy" class="w-4 h-4"></i></button>
-                            <button onclick="window.toggleStoreStatus('${d.id}', '${s.status}')" class="p-2 ${s.status === 'paused' ? 'bg-amber-600' : 'bg-emerald-600'} rounded-lg">
-                                <i data-lucide="${s.status === 'paused' ? 'play' : 'pause'}" class="w-4 h-4"></i>
+                        <div class="flex gap-2 text-xs">
+                            <button onclick="window.copyToClipboard('${appUrl}')" class="p-2 bg-slate-800 rounded-lg">App</button>
+                            <button onclick="window.copyToClipboard('${painelUrl}')" class="p-2 bg-slate-800 rounded-lg">Painel</button>
+                            <button onclick="window.toggleStoreStatus('${d.id}', '${status}')" class="p-2 ${status === 'paused' ? 'bg-emerald-600' : 'bg-amber-600'} rounded-lg">
+                                ${status === 'paused' ? 'Ativar' : 'Pausar'}
                             </button>
                         </div>
                     </div>`;
                 });
-                lucide.createIcons();
             });
+            
+            const storesSnap = await getCountFromServer(collection(db, 'stores'));
+            document.getElementById('stat-stores').innerText = storesSnap.data().count;
         }
+
+        window.forceUpdateMaster = () => window.location.reload(true);
     </script>
 </body>
 </html>
